@@ -23,7 +23,7 @@ find_package(plutovg 1.1.0 REQUIRED)
 find_package(plutosvg 0.0.7 REQUIRED)
 find_package(ryml REQUIRED)
 find_package(FFMPEG 7.1 COMPONENTS avcodec avformat avutil swresample swscale REQUIRED)
-if (WIN32)
+if (WIN32 AND NOT MINGW)
 	find_package(DirectX-Headers 1.618.1 REQUIRED)
 endif()
 
@@ -134,7 +134,7 @@ elseif(ARCH_ARM64)
 endif()
 
 # Prevent fmt from being built with exceptions, or being thrown at call sites.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFMT_USE_EXCEPTIONS=0 -DFMT_USE_RTTI=0")
+add_compile_definitions("$<$<COMPILE_LANGUAGE:CXX>:FMT_USE_EXCEPTIONS=0;FMT_USE_RTTI=0>")
 add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
 
 # Deliberately at the end. We don't want to set the flag on third-party projects.
