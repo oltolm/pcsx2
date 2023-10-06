@@ -22,7 +22,7 @@
 	((void)(_aligned_free(ptr), (ptr) = NULL))
 
 // aligned_malloc: Implement/declare linux equivalents here!
-#if !defined(_MSC_VER)
+#if !defined(_WIN32)
 extern void* _aligned_malloc(size_t size, size_t align);
 extern void* pcsx2_aligned_realloc(void* handle, size_t new_size, size_t align, size_t old_size);
 extern void _aligned_free(void* pmem);
