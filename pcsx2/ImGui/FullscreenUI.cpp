@@ -487,7 +487,7 @@ namespace FullscreenUI
 TinyString FullscreenUI::TimeToPrintableString(time_t t)
 {
 	struct tm lt = {};
-#ifdef _MSC_VER
+#ifdef _WIN32
 	localtime_s(&lt, &t);
 #else
 	localtime_r(&t, &lt);
@@ -5004,7 +5004,7 @@ void FullscreenUI::DrawPauseMenu(MainWindowType type)
 		char buf[256];
 		struct tm ltime;
 		const std::time_t ctime(std::time(nullptr));
-#ifdef _MSC_VER
+#ifdef _WIN32
 		localtime_s(&ltime, &ctime);
 #else
 		localtime_r(&ctime, &ltime);

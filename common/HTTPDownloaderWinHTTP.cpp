@@ -10,7 +10,9 @@
 #include <VersionHelpers.h>
 #include <algorithm>
 
+#ifdef _MSC_VER
 #pragma comment(lib, "winhttp.lib")
+#endif
 
 HTTPDownloaderWinHttp::HTTPDownloaderWinHttp()
 	: HTTPDownloader()

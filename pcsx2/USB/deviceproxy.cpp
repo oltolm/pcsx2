@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0+
 
 #include "deviceproxy.h"
+#ifdef _MSC_VER
 #include "usb-eyetoy/usb-eyetoy-webcam.h"
+#endif
 #include "usb-hid/usb-hid.h"
 #include "usb-mic/usb-headset.h"
 #include "usb-mic/usb-mic-singstar.h"
@@ -72,7 +74,9 @@ void RegisterDevice::Register()
 	inst.Add(DEVTYPE_RBKIT, new usb_pad::RBDrumKitDevice());
 	inst.Add(DEVTYPE_DJ, new usb_pad::DJTurntableDevice());
 	inst.Add(DEVTYPE_BUZZ, new usb_pad::BuzzDevice());
+#ifdef _MSC_VER
 	inst.Add(DEVTYPE_EYETOY, new usb_eyetoy::EyeToyWebCamDevice());
+#endif
 	inst.Add(DEVTYPE_BEATMANIA_DADADA, new usb_hid::BeatManiaDevice());
 	inst.Add(DEVTYPE_SEGA_SEAMIC, new usb_pad::SeamicDevice());
 	inst.Add(DEVTYPE_PRINTER, new usb_printer::PrinterDevice());
