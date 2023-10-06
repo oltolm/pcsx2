@@ -115,3 +115,6 @@ oprofile_data/
 CMakeSettings.json
 /ci-artifacts/
 /out/
+CMakeUserPresets.json
+compile_commands.json
+/.cache

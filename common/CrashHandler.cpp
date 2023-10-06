@@ -70,6 +70,7 @@ static bool WriteMinidump(HMODULE hDbgHelp, HANDLE hFile, HANDLE hProcess, DWORD
 		return minidump_write_dump(hProcess, process_id, hFile, type, &mei, nullptr, nullptr);
 	}
 
+#ifdef _MSC_VER
 	__try
 	{
 		RaiseException(EXCEPTION_INVALID_HANDLE, 0, 0, nullptr);
@@ -79,6 +80,7 @@ static bool WriteMinidump(HMODULE hDbgHelp, HANDLE hFile, HANDLE hProcess, DWORD
 		EXCEPTION_EXECUTE_HANDLER)
 	{
 	}
+#endif
 
 	return true;
 }
