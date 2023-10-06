@@ -19,6 +19,10 @@
 #include <iomanip>
 #include <bit>
 
+#ifdef _WIN32
+#include <intrin.h>
+#endif
+
 u64 GSState::s_n = 0;
 u64 GSState::s_last_transfer_draw_n = 0;
 u64 GSState::s_transfer_n = 0;
