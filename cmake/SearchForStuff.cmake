@@ -125,7 +125,7 @@ elseif(_M_ARM64)
 endif()
 
 # Prevent fmt from being built with exceptions, or being thrown at call sites.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFMT_EXCEPTIONS=0")
+add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:FMT_EXCEPTIONS=0>)
 add_subdirectory(3rdparty/fmt EXCLUDE_FROM_ALL)
 
 # Deliberately at the end. We don't want to set the flag on third-party projects.
