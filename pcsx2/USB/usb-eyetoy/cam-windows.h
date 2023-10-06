@@ -7,15 +7,23 @@
 
 #include <dshow.h>
 #include <mutex>
+#ifndef _MSC_VER
+#include <qedit.h>
+#endif
 
+#ifdef _MSC_VER
 #pragma comment(lib, "strmiids")
+#endif
 
 extern "C" {
+#ifdef _MSC_VER
 extern GUID IID_ISampleGrabberCB;
 extern GUID CLSID_SampleGrabber;
+#endif
 extern GUID CLSID_NullRenderer;
 }
 
+#ifdef _MSC_VER
 #pragma region qedit.h
 struct __declspec(uuid("0579154a-2b53-4994-b0d0-e773148eff85")) ISampleGrabberCB : IUnknown
 {
@@ -37,6 +45,7 @@ struct __declspec(uuid("6b652fff-11fe-4fce-92ad-0266b5d7c78f")) ISampleGrabber :
 struct __declspec(uuid("c1f400a0-3f08-11d3-9f0b-006008039e37")) SampleGrabber;
 
 #pragma endregion
+#endif
 
 
 #ifndef MAXLONGLONG

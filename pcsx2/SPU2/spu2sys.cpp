@@ -58,7 +58,7 @@ void SetIrqCallDMA(int core)
 	has_to_call_irq_dma[core] = true;
 }
 
-__forceinline s16* GetMemPtr(u32 addr)
+__fi s16* GetMemPtr(u32 addr)
 {
 #ifndef DEBUG_FAST
 	// In case you're wondering, this assert is the reason SPU2
@@ -68,14 +68,14 @@ __forceinline s16* GetMemPtr(u32 addr)
 	return (_spu2mem + addr);
 }
 
-__forceinline s16 spu2M_Read(u32 addr)
+__fi s16 spu2M_Read(u32 addr)
 {
 	return *GetMemPtr(addr & 0xfffff);
 }
 
 // writes a signed value to the SPU2 ram
 // Invalidates the ADPCM cache in the process.
-__forceinline void spu2M_Write(u32 addr, s16 value)
+__fi void spu2M_Write(u32 addr, s16 value)
 {
 	// Make sure the cache is invalidated:
 	// (note to self : addr address WORDs, not bytes)
@@ -93,7 +93,7 @@ __forceinline void spu2M_Write(u32 addr, s16 value)
 }
 
 // writes an unsigned value to the SPU2 ram
-__forceinline void spu2M_Write(u32 addr, u16 value)
+__fi void spu2M_Write(u32 addr, u16 value)
 {
 	spu2M_Write(addr, (s16)value);
 }
@@ -233,7 +233,7 @@ void V_Voice::Stop()
 	ADSR.Phase = V_ADSR::PHASE_STOPPED;
 }
 
-__forceinline void CounterUpdate(u32 DMAICounter)
+__fi void CounterUpdate(u32 DMAICounter)
 {
 	if (((psxCounters[6].startCycle + psxCounters[6].deltaCycles) - psxRegs.cycle) > (u32)DMAICounter)
 	{
@@ -247,7 +247,7 @@ __forceinline void CounterUpdate(u32 DMAICounter)
 	}
 }
 
-__forceinline void CheckDMAProgress(int cid)
+__fi void CheckDMAProgress(int cid)
 {
 	V_Core& core = Cores[cid];
 	int adma_cbit = 1 << cid;
@@ -314,7 +314,7 @@ __forceinline void CheckDMAProgress(int cid)
 static constexpr uint TickInterval = 768;
 static constexpr int SanityInterval = 4800;
 
-__forceinline void TimeUpdate(u64 cClocks)
+__fi void TimeUpdate(u64 cClocks)
 {
 	u32 dClocks = cClocks - lClocks;
 
@@ -366,7 +366,7 @@ __forceinline void TimeUpdate(u64 cClocks)
 	CheckDMAProgress(1);
 }
 
-__forceinline void UpdateSpdifMode()
+__fi void UpdateSpdifMode()
 {
 	const int OPM = PlayMode;
 
@@ -871,12 +871,12 @@ u16 V_Core::ReadRegPS1(u32 mem)
 }
 
 // Ah the joys of endian-specific code! :D
-static __forceinline void SetHiWord(u32& src, u16 value)
+static __fi void SetHiWord(u32& src, u16 value)
 {
 	((u16*)&src)[1] = value;
 }
 
-static __forceinline void SetLoWord(u32& src, u16 value)
+static __fi void SetLoWord(u32& src, u16 value)
 {
 	((u16*)&src)[0] = value;
 }

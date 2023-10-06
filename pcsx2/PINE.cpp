@@ -384,7 +384,12 @@ std::vector<u8>& PINEServer::MakeFailIPC(std::vector<u8>& ret_buffer, uint32_t s
 bool PINEServer::AcceptClient()
 {
 	s_msgsock = accept(s_sock, 0, 0);
+
+#ifdef _WIN32
+	if (s_msgsock == INVALID_SOCKET)
+#else
 	if (s_msgsock < 0)
+#endif
 	{
 		// everything else is non recoverable in our scope
 		// we also mark as recoverable socket errors where it would block a

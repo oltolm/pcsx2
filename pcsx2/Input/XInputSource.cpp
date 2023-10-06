@@ -493,7 +493,7 @@ void XInputSource::HandleControllerConnection(u32 index)
 void XInputSource::HandleControllerDisconnection(u32 index)
 {
 	INFO_LOG("XInput controller {} disconnected.", index);
-	InputManager::OnInputDeviceDisconnected({{
+	InputManager::OnInputDeviceDisconnected(InputBindingKey{{
 												.source_type = InputSourceType::XInput,
 												.source_index = index,
 											}},
