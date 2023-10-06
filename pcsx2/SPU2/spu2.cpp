@@ -480,7 +480,7 @@ s32 SPU2freeze(FreezeAction mode, freezeData* data)
 	return 0;
 }
 
-__forceinline void spu2Output(StereoOut32 out)
+__fi void spu2Output(StereoOut32 out)
 {
 	// Final clamp, take care not to exceed 16 bits from here on
 	s_current_chunk[s_current_chunk_pos++] = static_cast<s16>(clamp_mix(out.Left));
