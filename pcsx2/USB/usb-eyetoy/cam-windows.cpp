@@ -216,7 +216,7 @@ namespace usb_eyetoy
 									VIDEOINFOHEADER* pVih = (VIDEOINFOHEADER*)pmtConfig->pbFormat;
 									pVih->bmiHeader.biWidth = frame_width;
 									pVih->bmiHeader.biHeight = frame_height;
-									pVih->bmiHeader.biSizeImage = DIBSIZE(pVih->bmiHeader);
+									pVih->bmiHeader.biSizeImage = GDI_DIBSIZE(pVih->bmiHeader);
 									hr = pSourceConfig->SetFormat(pmtConfig);
 									if (FAILED(hr))
 									{

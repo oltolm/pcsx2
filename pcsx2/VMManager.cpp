@@ -67,11 +67,10 @@
 #include <common/RedtapeWilCom.h>
 
 #ifdef _WIN32
-#include "common/RedtapeWindows.h"
+#include "common/RedtapeWilCom.h"
 #include <objbase.h>
 #include <timeapi.h>
 #include <powrprof.h>
-#include <wil/com.h>
 #include <dxgi.h>
 #endif
 

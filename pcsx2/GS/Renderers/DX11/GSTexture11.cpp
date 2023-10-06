@@ -258,7 +258,7 @@ void GSDownloadTexture11::CopyFromTexture(
 	}
 	else
 	{
-		const CD3D11_BOX sbox(src.left, src.top, 0, src.right, src.bottom, 1);
+		const D3D11_BOX sbox = {(UINT)src.left, (UINT)src.top, 0, (UINT)src.right, (UINT)src.bottom, 1};
 		GSDevice11::GetInstance()->GetD3DContext()->CopySubresourceRegion(
 			m_texture.get(), 0, drc.x, drc.y, 0, *static_cast<GSTexture11*>(stex), src_level, &sbox);
 	}
