@@ -384,7 +384,12 @@ std::vector<u8>& PINEServer::MakeFailIPC(std::vector<u8>& ret_buffer, uint32_t s
 bool PINEServer::AcceptClient()
 {
 	s_msgsock = accept(s_sock, 0, 0);
+
+#ifdef _WIN32
+	if (s_msgsock >= INVALID_SOCKET)
+#else
 	if (s_msgsock >= 0)
+#endif
 	{
 		// Gross C-style cast, but SOCKET is a handle on Windows.
 		Console.WriteLn("PINE: New client with FD %d connected.", (int)s_msgsock);

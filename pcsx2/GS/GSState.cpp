@@ -19,6 +19,8 @@
 #include <iomanip>
 #include <bit>
 
+#include <intrin.h>
+
 int GSState::s_n = 0;
 int GSState::s_last_transfer_draw_n = 0;
 int GSState::s_transfer_n = 0;
