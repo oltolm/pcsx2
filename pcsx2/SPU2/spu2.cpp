@@ -512,7 +512,7 @@ static void DCFilter(float *input)
 	input[1] = output[1];
 }
 
-__forceinline void spu2Output(StereoOut32 out)
+__fi void spu2Output(StereoOut32 out)
 {
 	float conv[2];
 

@@ -13,6 +13,10 @@
 #pragma clang diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
+#ifndef __is_convertible_to
+#define __is_convertible_to(from, to) std::is_convertible<from, to>::value
+#endif
+
 #include <wil/com.h>
 
 #ifdef __clang__

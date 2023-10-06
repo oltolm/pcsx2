@@ -107,7 +107,7 @@ void InitNet()
 	rx_thread = std::thread(NetRxThread);
 
 #ifdef _WIN32
-	SetThreadPriority(rx_thread.native_handle(), THREAD_PRIORITY_HIGHEST);
+	SetThreadPriority(reinterpret_cast<HANDLE>(rx_thread.native_handle()), THREAD_PRIORITY_HIGHEST);
 #elif defined(__POSIX__)
 	int policy = 0;
 	sched_param param;

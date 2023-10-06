@@ -10,6 +10,7 @@
 
 #ifdef _WIN32
 #include "RedtapeWindows.h"
+#include <cstring>
 #include <intrin.h>
 #include <tlhelp32.h>
 #endif

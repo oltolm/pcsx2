@@ -8,7 +8,7 @@
 #include <bit>
 #include <cstring>
 
-#ifdef _MSC_VER
+#if defined(_WIN32)
 
 #include <intrin.h>
 

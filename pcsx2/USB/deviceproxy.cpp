@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "deviceproxy.h"
+#ifdef _WIN32
 #include "usb-eyetoy/usb-eyetoy-webcam.h"
+#endif
 #include "usb-pad/usb-buzz.h"
 #include "usb-pad/usb-gametrak.h"
 #include "usb-pad/usb-realplay.h"
@@ -76,7 +78,9 @@ void RegisterDevice::Register()
 	inst.Add(DEVTYPE_RBKIT, new usb_pad::RBDrumKitDevice());
 	inst.Add(DEVTYPE_DJ, new usb_pad::DJTurntableDevice());
 	inst.Add(DEVTYPE_BUZZ, new usb_pad::BuzzDevice());
+#ifdef _WIN32
 	inst.Add(DEVTYPE_EYETOY, new usb_eyetoy::EyeToyWebCamDevice());
+#endif
 	inst.Add(DEVTYPE_TRANCE_VIBRATOR, new usb_pad::TranceVibratorDevice());
 	inst.Add(DEVTYPE_SEGA_SEAMIC, new usb_pad::SeamicDevice());
 	inst.Add(DEVTYPE_PRINTER, new usb_printer::PrinterDevice());
