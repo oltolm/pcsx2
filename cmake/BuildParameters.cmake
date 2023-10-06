@@ -264,8 +264,7 @@ if(USE_PGO_OPTIMIZE)
 endif()
 
 list(APPEND PCSX2_DEFS
-	"$<$<CONFIG:Debug>:PCSX2_DEVBUILD;PCSX2_DEBUG;_DEBUG>"
-	"$<$<CONFIG:Devel>:PCSX2_DEVBUILD;_DEVEL>")
+	"$<$<CONFIG:Debug>:PCSX2_DEVBUILD;PCSX2_DEBUG;_DEBUG>")
 
 if (USE_ASAN)
 	add_compile_options(-fsanitize=address)
@@ -284,7 +283,7 @@ if(POSITION_INDEPENDENT_CODE)
 	# Without this check, on some platforms (e.g. Fedora 43) the right flags
 	# won't be passed to the linker, resulting in a broken build when link time
 	# optimization is enabled (even with a cmake version >= 3.14).
-	if(NOT MSVC)
+	if(NOT WIN32)
 		include(CheckPIESupported)
 		check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORTED_OUTPUT LANGUAGES C CXX)
 

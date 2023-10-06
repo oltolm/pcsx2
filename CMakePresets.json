@@ -38,15 +38,6 @@
             }
         },
         {
-            "name": "clang-devel",
-            "displayName": "Clang Devel",
-            "description": "Developer build using ninja & clang.",
-            "inherits": "clang-base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Devel"
-            }
-        },
-        {
             "name": "clang-release",
             "displayName": "Clang Release",
             "description": "Release lto build using ninja & clang.",

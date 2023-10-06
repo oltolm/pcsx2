@@ -13,6 +13,10 @@ if(WIN32)
 	target_link_libraries(updater PRIVATE
 		LZMA::LZMA
 		Comctl32.lib
+		WIL::WIL
+		version
+		synchronization
+		pathcch
 	)
 	target_sources(updater PRIVATE
 		Windows/WindowsUpdater.cpp
@@ -21,6 +25,9 @@ if(WIN32)
 		Windows/updater.manifest
 	)
 	set_target_properties(updater PROPERTIES WIN32_EXECUTABLE TRUE)
+	if(NOT MSVC)
+		target_link_options(updater PRIVATE -municode)
+	endif()
 endif()
 
 if(NOT PACKAGE_MODE)
