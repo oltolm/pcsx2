@@ -45,31 +45,6 @@ endif()
 option(USE_ASAN "Enable address sanitizer")
 
 #-------------------------------------------------------------------------------
-# if no build type is set, use Devel as default
-# Note without the CMAKE_BUILD_TYPE options the value is still defined to ""
-# Ensure that the value set by the User is correct to avoid some bad behavior later
-#-------------------------------------------------------------------------------
-if(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Devel|MinSizeRel|RelWithDebInfo|Release")
-	set(CMAKE_BUILD_TYPE Devel)
-	message(STATUS "BuildType set to ${CMAKE_BUILD_TYPE} by default")
-endif()
-# Add Devel build type
-set(CMAKE_C_FLAGS_DEVEL "${CMAKE_C_FLAGS_RELWITHDEBINFO}"
-	CACHE STRING "Flags used by the C compiler during development builds" FORCE)
-set(CMAKE_CXX_FLAGS_DEVEL "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}"
-	CACHE STRING "Flags used by the C++ compiler during development builds" FORCE)
-set(CMAKE_LINKER_FLAGS_DEVEL "${CMAKE_LINKER_FLAGS_RELWITHDEBINFO}"
-	CACHE STRING "Flags used for linking binaries during development builds" FORCE)
-set(CMAKE_SHARED_LINKER_FLAGS_DEVEL "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO}"
-	CACHE STRING "Flags used for linking shared libraries during development builds" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS_DEVEL "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO}"
-	CACHE STRING "Flags used for linking executables during development builds" FORCE)
-if(CMAKE_CONFIGURATION_TYPES)
-	list(INSERT CMAKE_CONFIGURATION_TYPES 0 Devel)
-endif()
-mark_as_advanced(CMAKE_C_FLAGS_DEVEL CMAKE_CXX_FLAGS_DEVEL CMAKE_LINKER_FLAGS_DEVEL CMAKE_SHARED_LINKER_FLAGS_DEVEL CMAKE_EXE_LINKER_FLAGS_DEVEL)
-
-#-------------------------------------------------------------------------------
 # Select the architecture
 #-------------------------------------------------------------------------------
 if("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR "${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "amd64" OR
@@ -254,8 +229,7 @@ if(USE_PGO_OPTIMIZE)
 endif()
 
 list(APPEND PCSX2_DEFS
-	"$<$<CONFIG:Debug>:PCSX2_DEVBUILD;PCSX2_DEBUG;_DEBUG>"
-	"$<$<CONFIG:Devel>:PCSX2_DEVBUILD;_DEVEL>")
+	"$<$<CONFIG:Debug>:PCSX2_DEVBUILD;PCSX2_DEBUG;_DEBUG>")
 
 if (USE_ASAN)
 	add_compile_options(-fsanitize=address)
