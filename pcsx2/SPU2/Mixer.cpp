@@ -71,7 +71,7 @@ static void __forceinline XA_decode_block(s16* buffer, const s16* block, s32& pr
 	}
 }
 
-static void __forceinline IncrementNextA(V_Core& thiscore, uint voiceidx)
+static void __fi IncrementNextA(V_Core& thiscore, uint voiceidx)
 {
 	V_Voice& vc(thiscore.Voices[voiceidx]);
 
@@ -93,7 +93,7 @@ static void __forceinline IncrementNextA(V_Core& thiscore, uint voiceidx)
 	vc.NextA &= 0xFFFFF;
 }
 
-static __forceinline void GetNextDataBuffered(V_Core& thiscore, uint voiceidx)
+static __fi void GetNextDataBuffered(V_Core& thiscore, uint voiceidx)
 {
 	V_Voice& vc(thiscore.Voices[voiceidx]);
 
@@ -152,19 +152,19 @@ static __forceinline void GetNextDataBuffered(V_Core& thiscore, uint voiceidx)
 /////////////////////////////////////////////////////////////////////////////////////////
 //                                                                                     //
 
-static __forceinline s32 ApplyVolume(s32 data, s32 volume)
+static __fi s32 ApplyVolume(s32 data, s32 volume)
 {
 	return (volume * data) >> 15;
 }
 
-static __forceinline StereoOut32 ApplyVolume(const StereoOut32& data, const V_VolumeLR& volume)
+static __fi StereoOut32 ApplyVolume(const StereoOut32& data, const V_VolumeLR& volume)
 {
 	return StereoOut32(
 		ApplyVolume(data.Left, volume.Left),
 		ApplyVolume(data.Right, volume.Right));
 }
 
-static __forceinline StereoOut32 ApplyVolume(const StereoOut32& data, const V_VolumeSlideLR& volume)
+static __fi StereoOut32 ApplyVolume(const StereoOut32& data, const V_VolumeSlideLR& volume)
 {
 	return StereoOut32(
 		ApplyVolume(data.Left, volume.Left.Value),
@@ -252,7 +252,7 @@ static void __forceinline UpdatePitch(uint coreidx, uint voiceidx)
 	vc.SP += pitch;
 }
 
-static __forceinline void CalculateADSR(V_Core& thiscore, uint voiceidx)
+static __fi void CalculateADSR(V_Core& thiscore, uint voiceidx)
 {
 	V_Voice& vc(thiscore.Voices[voiceidx]);
 
@@ -275,7 +275,7 @@ static __forceinline void CalculateADSR(V_Core& thiscore, uint voiceidx)
 	pxAssume(vc.ADSR.Value >= 0); // ADSR should never be negative...
 }
 
-static __forceinline void ConsumeSamples(V_Core& thiscore, uint voiceidx)
+static __fi void ConsumeSamples(V_Core& thiscore, uint voiceidx)
 {
 	V_Voice& vc(thiscore.Voices[voiceidx]);
 
@@ -284,7 +284,7 @@ static __forceinline void ConsumeSamples(V_Core& thiscore, uint voiceidx)
 	vc.DecPosRead += consumed;
 }
 
-static __forceinline s32 GetVoiceValues(V_Core& thiscore, uint voiceidx)
+static __fi s32 GetVoiceValues(V_Core& thiscore, uint voiceidx)
 {
 	V_Voice& vc(thiscore.Voices[voiceidx]);
 
@@ -300,7 +300,7 @@ static __forceinline s32 GetVoiceValues(V_Core& thiscore, uint voiceidx)
 
 // This is Dr. Hell's noise algorithm as implemented in pcsxr
 // Supposedly this is 100% accurate
-static __forceinline void UpdateNoise(V_Core& thiscore)
+static __fi void UpdateNoise(V_Core& thiscore)
 {
 	static const uint8_t noise_add[64] = {
 		1, 0, 0, 1, 0, 1, 1, 0,
@@ -337,7 +337,7 @@ static __forceinline void UpdateNoise(V_Core& thiscore)
 	}
 }
 
-static __forceinline s32 GetNoiseValues(V_Core& thiscore)
+static __fi s32 GetNoiseValues(V_Core& thiscore)
 {
 	return (s16)thiscore.NoiseOut;
 }
@@ -349,7 +349,7 @@ static __forceinline s32 GetNoiseValues(V_Core& thiscore)
 // writes a signed value to the SPU2 ram
 // Performs no cache invalidation -- use only for dynamic memory ranges
 // of the SPU2 (between 0x0000 and SPU2_DYN_MEMLINE)
-static __forceinline void spu2M_WriteFast(u32 addr, s16 value)
+static __fi void spu2M_WriteFast(u32 addr, s16 value)
 {
 	// Fixes some of the oldest hangs in pcsx2's history! :p
 	for (int i = 0; i < 2; i++)
@@ -368,7 +368,7 @@ static __forceinline void spu2M_WriteFast(u32 addr, s16 value)
 }
 
 
-static __forceinline StereoOut32 MixVoice(uint coreidx, uint voiceidx)
+static __fi StereoOut32 MixVoice(uint coreidx, uint voiceidx)
 {
 	V_Core& thiscore(Cores[coreidx]);
 	V_Voice& vc(thiscore.Voices[voiceidx]);
@@ -420,7 +420,7 @@ static __forceinline StereoOut32 MixVoice(uint coreidx, uint voiceidx)
 	return voiceOut;
 }
 
-static __forceinline void MixCoreVoices(VoiceMixSet& dest, const uint coreidx)
+static __fi void MixCoreVoices(VoiceMixSet& dest, const uint coreidx)
 {
 	V_Core& thiscore(Cores[coreidx]);
 

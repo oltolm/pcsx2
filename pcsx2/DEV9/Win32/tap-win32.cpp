@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2002-2026 PCSX2 Dev Team
 // SPDX-License-Identifier: GPL-3.0+
 
+#include <tchar.h>
 #include "common/RedtapeWindows.h"
 #include "common/RedtapeWilCom.h"
 #include "common/StringUtil.h"
@@ -15,7 +16,6 @@
 #include <Netcfgx.h>
 #include <devguid.h>
 
-#include <tchar.h>
 #include "tap.h"
 #include "DEV9/DEV9.h"
 #include <string>
