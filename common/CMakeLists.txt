@@ -36,6 +36,9 @@ target_sources(common PRIVATE
 	YAML.cpp
 )
 
+set_source_files_properties(Windows/WinHostSys.cpp PROPERTIES COMPILE_DEFINITIONS NTDDI_VERSION=0x0A000005)
+
+# x86emitter headers
 target_sources(common PRIVATE
 	AlignedMalloc.h
 	Assertions.h
@@ -124,22 +127,30 @@ if(_M_X86)
 endif()
 
 if(WIN32)
-	enable_language(ASM_MASM)
-	target_sources(common PRIVATE
-		FastJmp.asm
-		HTTPDownloaderWinHTTP.cpp
-		HTTPDownloaderWinHTTP.h
-		StackWalker.cpp
-		StackWalker.h
-		Windows/WinThreads.cpp
-		Windows/WinHostSys.cpp
-		Windows/WinMisc.cpp
-	)
-	target_link_libraries(common PUBLIC
-		WIL::WIL
-		winmm
-		pathcch
-	)
+	if(MSVC)
+		enable_language(ASM_MASM)
+		target_sources(common PRIVATE FastJmp.asm)
+		target_link_libraries(common PUBLIC WIL::WIL winmm pathcch)
+		target_link_libraries(common PUBLIC
+			WIL::WIL
+			winmm
+			pathcch
+		)
+	else()
+		add_custom_command(COMMAND jwasm -win64 ${CMAKE_CURRENT_SOURCE_DIR}/FastJmp.asm
+			OUTPUT FastJmp.obj
+			DEPENDS FastJmp.asm
+		)
+		target_sources(common PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/FastJmp.obj)
+		target_sources(common PRIVATE
+			FastJmp.asm
+			HTTPDownloaderWinHTTP.cpp
+			StackWalker.cpp
+			Windows/WinThreads.cpp
+			Windows/WinHostSys.cpp
+			Windows/WinMisc.cpp
+		)
+	endif()
 elseif(APPLE)
 	target_sources(common PRIVATE
 		CocoaTools.mm
