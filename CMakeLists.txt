@@ -10,6 +10,11 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "PCSX2 does not support in-tree builds.  Please make a build directory that is not the PCSX2 source directory and generate your CMake project there using either `cmake -B build_directory` or by running cmake from the build directory.")
 endif()
 
+find_program(CCACHE ccache)
+if(CCACHE)
+	set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+endif()
+
 # Project Name
 project(Pcsx2 C CXX)
 
@@ -53,7 +58,7 @@ if(ENABLE_QT_UI)
 endif()
 
 # Updater is Windows only for now.
-if (WIN32)
+if (MSVC)
 	add_subdirectory(updater)
 endif()
 
