@@ -81,8 +81,12 @@ static constexpr unsigned int __pagealignsize = 0x1000;
 // __forceinline_odr is for member functions that are defined in headers. MSVC can't specify
 // inline and __forceinline at the same time, but it required to not get ODR errors in GCC.
 
+#ifndef __MINGW32__
 #define __forceinline __attribute__((always_inline, unused))
 #define __forceinline_odr __forceinline inline
+#else
+#define __forceinline_odr __forceinline
+#endif
 #define __noinline __attribute__((noinline))
 #define __noreturn __attribute__((noreturn))
 
@@ -108,7 +112,11 @@ static constexpr unsigned int __pagealignsize = 0x1000;
 // from Devel builds is likely useful; but which should be inlined in an optimized Release
 // environment.
 //
+#ifdef _MSC_VER
 #define __fi __forceinline
+#else
+#define __fi
+#endif
 #ifdef PCSX2_DEVBUILD
 #define __ri
 #else
