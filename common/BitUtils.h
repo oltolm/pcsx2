@@ -8,11 +8,11 @@
 #include <bit>
 #include <cstring>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 
 #include <intrin.h>
 
-#else
+#elif !defined(__MINGW32__)
 
 static inline int _BitScanReverse(unsigned long* const Index, const unsigned long Mask)
 {
