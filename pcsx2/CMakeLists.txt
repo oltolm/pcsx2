@@ -42,10 +42,9 @@ if(USE_LINKED_FFMPEG)
 endif()
 
 if(WIN32)
-	set(MIN_WIN32 0x0A00)
 	target_compile_definitions(PCSX2_FLAGS INTERFACE
-		WINVER=${MIN_WIN32}
-		_WIN32_WINNT=${MIN_WIN32}
+		WINVER=0x0A00
+		_WIN32_WINNT=0x0A00
 		WIN32_LEAN_AND_MEAN
 		WIL_SUPPRESS_EXCEPTIONS
 	)
@@ -672,12 +671,14 @@ if(WIN32)
 		DEV9/Win32/tap.h
 	)
 
-	list(APPEND pcsx2USBSources
-		USB/usb-eyetoy/cam-windows.cpp
-	)
-	list(APPEND pcsx2USBHeaders
-		USB/usb-eyetoy/cam-windows.h
-	)
+	# if(MSVC)
+		list(APPEND pcsx2USBSources
+			USB/usb-eyetoy/cam-windows.cpp
+		)
+		list(APPEND pcsx2USBHeaders
+			USB/usb-eyetoy/cam-windows.h
+		)
+	# endif()
 
 	list(APPEND pcsx2GSSources
 		GS/Renderers/DX11/D3D.cpp
@@ -1120,6 +1121,7 @@ if(WIN32)
 	target_sources(PCSX2 PRIVATE
 		${pcsx2WindowsSources}
 	)
+	set_source_files_properties(GS/GS.cpp PROPERTIES COMPILE_DEFINITIONS NTDDI_VERSION=0x0A000005)
 endif()
 
 target_sources(PCSX2 PRIVATE ${pcsx2USBSources} ${pcsx2USBHeaders})
@@ -1181,9 +1183,13 @@ if(WIN32)
 		dxgi.lib
 		strmiids.lib
 		opengl32.lib
-		comsuppw.lib
+		"$<$<CXX_COMPILER_ID:MSVC>:comsuppw.lib>"
 		dwmapi.lib
 		OneCore.lib
+		Winhttp.lib
+		Version.lib
+		Pathcch.lib
+		avrt.lib
 	)
 else()
 	target_link_libraries(PCSX2_FLAGS INTERFACE
