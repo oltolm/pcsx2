@@ -897,7 +897,7 @@ std::string GSDevice11::GetDriverInfo() const
 	return ret;
 }
 
-void GSDevice11::ResizeWindow(s32 new_window_width, s32 new_window_height, float new_window_scale)
+void GSDevice11::ResizeWindow(u32 new_window_width, u32 new_window_height, float new_window_scale)
 {
 	if (!m_swap_chain || m_is_exclusive_fullscreen)
 		return;

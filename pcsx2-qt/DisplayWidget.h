@@ -32,7 +32,7 @@ public:
 	void destroy();
 
 Q_SIGNALS:
-	void windowResizedEvent(int width, int height, float scale);
+	void windowResizedEvent(u32 width, u32 height, float scale);
 	void windowRestoredEvent();
 
 protected:

@@ -160,8 +160,10 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 		HKEY connection_key;
 		status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, connection_string, 0, KEY_READ, &connection_key);
 
-		if (status == ERROR_SUCCESS)
+		if (status != ERROR_SUCCESS)
 		{
+			continue;
+		}
 			ScopedGuard connection_key_guard([connection_key] {RegCloseKey(connection_key);});
 			len = sizeof(name_data);
 			status = RegQueryValueEx(connection_key, name_string, nullptr, &name_type, (LPBYTE)name_data,
@@ -171,8 +173,6 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 			{
 				continue;
 			}
-			else
-			{
 				if (IsTAPDevice(enum_name))
 				{
 					AdapterEntry t;
@@ -180,8 +180,6 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 					t.name = StringUtil::WideStringToUTF8String(std::wstring(name_data));
 					t.guid = StringUtil::WideStringToUTF8String(std::wstring(enum_name));
 					tap_nic.push_back(t);
-				}
-			}
 		}
 	}
 
@@ -257,7 +255,7 @@ HANDLE TAPOpen(const std::string& device_guid)
 	return handle;
 }
 
-PIP_ADAPTER_ADDRESSES FindAdapterViaIndex(PIP_ADAPTER_ADDRESSES adapterList, int ifIndex)
+PIP_ADAPTER_ADDRESSES FindAdapterViaIndex(PIP_ADAPTER_ADDRESSES adapterList, IF_INDEX ifIndex)
 {
 	PIP_ADAPTER_ADDRESSES currentAdapter = adapterList;
 	do
@@ -350,7 +348,7 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 	{
 		for (ULONG i = 0; i < table->NumEntries; i++)
 		{
-			int targetIndex = searchList[vi];
+			NET_IFINDEX targetIndex = searchList[vi];
 			MIB_IFSTACK_ROW row = table->Table[i];
 			if (row.LowerLayerInterfaceIndex == targetIndex)
 			{
