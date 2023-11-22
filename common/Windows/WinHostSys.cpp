@@ -364,7 +364,7 @@ bool PageFaultHandler::Install(Error* error)
 	std::unique_lock lock(s_exception_handler_mutex);
 	pxAssertRel(!s_installed, "Page fault handler has already been installed.");
 
-	PVOID handle = AddVectoredExceptionHandler(1, ExceptionHandler);
+	PVOID handle = AddVectoredExceptionHandler(FALSE, ExceptionHandler);
 	if (!handle)
 	{
 		Error::SetWin32(error, "AddVectoredExceptionHandler() failed: ", GetLastError());
