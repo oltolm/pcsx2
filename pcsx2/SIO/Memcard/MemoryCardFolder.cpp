@@ -2279,7 +2279,9 @@ FolderMemoryCardAggregator::FolderMemoryCardAggregator()
 #ifdef _WIN32
 	// Override Windows' default allowance for open files. Folder memory cards with more than 32 MB of content are likely to contain more than 512 individual files.
 	// Unix platforms seem to use 1024 by default.
+#ifndef ASAN_WORKAROUND
 	_setmaxstdio(1024);
+#endif
 #endif
 
 	for (uint i = 0; i < TotalCardSlots; ++i)
