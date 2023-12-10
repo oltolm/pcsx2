@@ -73,7 +73,7 @@ static inline bool FileSystemCharacterIsSane(char32_t c, bool strip_slashes)
 		return false;
 
 	if (c == U'<' || c == U'>' || c == U':' || c == U'"' || c == U'|' || c == U'?' || c == U'*' || c == 0 ||
-		c <= static_cast<char32_t>(31))
+		c <= 31)
 	{
 		return false;
 	}

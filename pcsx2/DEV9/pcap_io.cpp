@@ -417,7 +417,7 @@ void PCAPAdapter::HandleFrameCheckSequence(NetPacket* pkt)
 	{
 		// Minumum frame size is 60 + 4 byte FCS.
 		// Virtual NICs may omit this padding, so check we arn't increasing pkt size.
-		payloadSize = std::min(std::max(payloadSize, 60 - frame.headerLength), pkt->size);
+		payloadSize = std::min(std::max<unsigned>(payloadSize, 60 - frame.headerLength), pkt->size);
 
 		pkt->size = payloadSize + frame.headerLength;
 		return;
@@ -432,7 +432,7 @@ bool PCAPAdapter::ValidateEtherFrame(NetPacket* pkt)
 {
 	u32 crc = 0xFFFFFFFF;
 
-	for (int i = 0; i < pkt->size; i++)
+	for (unsigned i = 0; i < pkt->size; i++)
 	{
 		// Neads unsigned value
 		crc = crc ^ static_cast<u8>(pkt->buffer[i]);
