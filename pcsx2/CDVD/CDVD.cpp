@@ -227,13 +227,13 @@ void cdvdSaveNVRAM()
 	}
 }
 
-static void cdvdReadNVM(u8* dst, int offset, int bytes)
+static void cdvdReadNVM(u8* dst, unsigned offset, unsigned bytes)
 {
 	int to_read = bytes;
 	if (static_cast<size_t>(offset + bytes) > sizeof(s_nvram)) [[unlikely]]
 	{
 		WARNING_LOG("CDVD: Out of bounds NVRAM read: offset={}, bytes={}", offset, bytes);
-		to_read = std::max(static_cast<int>(sizeof(s_nvram)) - offset, 0);
+		to_read = std::max(static_cast<unsigned>(sizeof(s_nvram)) - offset, 0u);
 		pxAssert((bytes - to_read) > 0);
 		std::memset(dst + to_read, 0, bytes - to_read);
 	}
@@ -242,13 +242,13 @@ static void cdvdReadNVM(u8* dst, int offset, int bytes)
 		std::memcpy(dst, &s_nvram[offset], to_read);
 }
 
-static void cdvdWriteNVM(const u8* src, int offset, int bytes)
+static void cdvdWriteNVM(const u8* src, unsigned offset, unsigned bytes)
 {
 	int to_write = bytes;
 	if (static_cast<size_t>(offset + bytes) > sizeof(s_nvram)) [[unlikely]]
 	{
 		WARNING_LOG("CDVD: Out of bounds NVRAM write: offset={}, bytes={}", offset, bytes);
-		to_write = std::max(static_cast<int>(sizeof(s_nvram)) - offset, 0);
+		to_write = std::max(static_cast<unsigned>(sizeof(s_nvram)) - offset, 0u);
 	}
 
 	if (to_write > 0) [[likely]]
