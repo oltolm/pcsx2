@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "common/RedtapeWindows.h"
-#include "common/RedtapeWilCom.h"
 #include "common/StringUtil.h"
+#include <common/ScopedGuard.h>
 
 #include "fmt/core.h"
 
@@ -20,9 +20,7 @@
 #include "DEV9/DEV9.h"
 #include <string>
 
-#include <wil/com.h>
-#include <wil/resource.h>
-
+#include <wrl.h>
 #include "DEV9/PacketReader/MAC_Address.h"
 #include "DEV9/AdapterUtils.h"
 
@@ -64,10 +62,11 @@
 
 bool IsTAPDevice(const TCHAR* guid)
 {
-	wil::unique_hkey netcard_key;
-	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ADAPTER_KEY, 0, KEY_READ, netcard_key.put()) != ERROR_SUCCESS)
+	HKEY netcard_key;
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, ADAPTER_KEY, 0, KEY_READ, &netcard_key) != ERROR_SUCCESS)
 		return false;
 
+	ScopedGuard netcard_key_guard([netcard_key] {RegCloseKey(netcard_key);});
 	int i = 0;
 	for (;;)
 	{
@@ -80,7 +79,7 @@ bool IsTAPDevice(const TCHAR* guid)
 		DWORD data_type;
 
 		DWORD len = std::size(enum_name);
-		LSTATUS status = RegEnumKeyEx(netcard_key.get(), i, enum_name, &len, nullptr, nullptr, nullptr, nullptr);
+		LSTATUS status = RegEnumKeyEx(netcard_key, i, enum_name, &len, nullptr, nullptr, nullptr, nullptr);
 
 		if (status == ERROR_NO_MORE_ITEMS)
 			break;
@@ -89,32 +88,28 @@ bool IsTAPDevice(const TCHAR* guid)
 
 		_stprintf_s(unit_string, _T("%s\\%s"), ADAPTER_KEY, enum_name);
 
-		wil::unique_hkey unit_key;
-		status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, unit_string, 0, KEY_READ, unit_key.put());
-
-		if (status != ERROR_SUCCESS)
+		HKEY unit_key;
+		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, unit_string, 0, KEY_READ, &unit_key) != ERROR_SUCCESS)
 		{
 			return false;
 		}
-		else
+		ScopedGuard unit_key_guard([unit_key] {RegCloseKey(unit_key);});
+		len = sizeof(component_id);
+		status = RegQueryValueEx(unit_key, component_id_string, nullptr, &data_type,
+			(LPBYTE)component_id, &len);
+
+		if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
 		{
-			len = sizeof(component_id);
-			status = RegQueryValueEx(unit_key.get(), component_id_string, nullptr, &data_type,
-				(LPBYTE)component_id, &len);
+			len = sizeof(net_cfg_instance_id);
+			status = RegQueryValueEx(unit_key, net_cfg_instance_id_string, nullptr, &data_type,
+				(LPBYTE)net_cfg_instance_id, &len);
 
-			if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
+			if (status == ERROR_SUCCESS && data_type == REG_SZ)
 			{
-				len = sizeof(net_cfg_instance_id);
-				status = RegQueryValueEx(unit_key.get(), net_cfg_instance_id_string, nullptr, &data_type,
-					(LPBYTE)net_cfg_instance_id, &len);
-
-				if (status == ERROR_SUCCESS && data_type == REG_SZ)
+				// tap_ovpnconnect, tap0901 or root\tap, no clue why
+				if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
 				{
-					// tap_ovpnconnect, tap0901 or root\tap, no clue why
-					if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
-					{
-						return true;
-					}
+					return true;
 				}
 			}
 		}
@@ -130,14 +125,16 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 	DWORD len;
 	DWORD cSubKeys = 0;
 
-	wil::unique_hkey control_net_key;
+	HKEY control_net_key;
 	LSTATUS status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, NETWORK_CONNECTIONS_KEY, 0, KEY_READ | KEY_QUERY_VALUE,
-		control_net_key.put());
+		&control_net_key);
 
 	if (status != ERROR_SUCCESS)
 		return tap_nic;
 
-	status = RegQueryInfoKey(control_net_key.get(), nullptr, nullptr, nullptr, &cSubKeys, nullptr, nullptr,
+	ScopedGuard control_net_key_guard([control_net_key] {RegCloseKey(control_net_key);});
+
+	status = RegQueryInfoKey(control_net_key, nullptr, nullptr, nullptr, &cSubKeys, nullptr, nullptr,
 		nullptr, nullptr, nullptr, nullptr, nullptr);
 
 	if (status != ERROR_SUCCESS)
@@ -152,7 +149,7 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 		const TCHAR name_string[] = _T("Name");
 
 		len = std::size(enum_name);
-		status = RegEnumKeyEx(control_net_key.get(), i, enum_name, &len, nullptr, nullptr, nullptr, nullptr);
+		status = RegEnumKeyEx(control_net_key, i, enum_name, &len, nullptr, nullptr, nullptr, nullptr);
 
 		if (status != ERROR_SUCCESS)
 			continue;
@@ -160,13 +157,14 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 		_stprintf_s(connection_string, _T("%s\\%s\\Connection"),
 			NETWORK_CONNECTIONS_KEY, enum_name);
 
-		wil::unique_hkey connection_key;
-		status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, connection_string, 0, KEY_READ, connection_key.put());
+		HKEY connection_key;
+		status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, connection_string, 0, KEY_READ, &connection_key);
 
 		if (status == ERROR_SUCCESS)
 		{
+			ScopedGuard connection_key_guard([connection_key] {RegCloseKey(connection_key);});
 			len = sizeof(name_data);
-			status = RegQueryValueEx(connection_key.get(), name_string, nullptr, &name_type, (LPBYTE)name_data,
+			status = RegQueryValueEx(connection_key, name_string, nullptr, &name_type, (LPBYTE)name_data,
 				&len);
 
 			if (status != ERROR_SUCCESS || name_type != REG_SZ)
@@ -226,7 +224,7 @@ HANDLE TAPOpen(const std::string& device_guid)
 
 	std::string device_path = USERMODEDEVICEDIR + device_guid + TAPSUFFIX;
 
-	wil::unique_hfile handle(CreateFileA(
+	HANDLE handle(CreateFileA(
 		device_path.c_str(),
 		GENERIC_READ | GENERIC_WRITE,
 		0,
@@ -240,7 +238,9 @@ HANDLE TAPOpen(const std::string& device_guid)
 		return INVALID_HANDLE_VALUE;
 	}
 
-	const BOOL bret = DeviceIoControl(handle.get(), TAP_IOCTL_GET_VERSION,
+	ScopedGuard handle_guard([handle] {CloseHandle(handle);});
+
+	const BOOL bret = DeviceIoControl(handle, TAP_IOCTL_GET_VERSION,
 		&version, sizeof(version),
 		&version, sizeof(version), (LPDWORD)&version_len, NULL);
 
@@ -249,12 +249,12 @@ HANDLE TAPOpen(const std::string& device_guid)
 		return INVALID_HANDLE_VALUE;
 	}
 
-	if (!TAPSetStatus(handle.get(), TRUE))
+	if (!TAPSetStatus(handle, TRUE))
 	{
 		return INVALID_HANDLE_VALUE;
 	}
 
-	return handle.release();
+	return handle;
 }
 
 PIP_ADAPTER_ADDRESSES FindAdapterViaIndex(PIP_ADAPTER_ADDRESSES adapterList, int ifIndex)
@@ -382,21 +382,23 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 	PIP_ADAPTER_ADDRESSES bridgeAdapter = nullptr;
 
 	//Create Instance of INetCfg
-	if (auto netcfg = wil::CoCreateInstanceNoThrow<INetCfg>(CLSID_CNetCfg))
+	INetCfg *netcfg = nullptr;
+	auto hr = CoCreateInstance(CLSID_CNetCfg, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&netcfg));
+	if (SUCCEEDED(hr))
 	{
 		HRESULT hr = netcfg->Initialize(nullptr);
 		if (SUCCEEDED(hr))
 		{
 			//Get the bridge component
 			//The bridged adapter should have this bound
-			wil::com_ptr_nothrow<INetCfgComponent> bridge;
-			hr = netcfg->FindComponent(L"ms_bridge", bridge.put());
+			Microsoft::WRL::ComPtr<INetCfgComponent> bridge;
+			hr = netcfg->FindComponent(L"ms_bridge", &bridge);
 
 			if (SUCCEEDED(hr))
 			{
 				//Get a List of network adapters via INetCfg
-				wil::com_ptr_nothrow<IEnumNetCfgComponent> components;
-				hr = netcfg->EnumComponents(&GUID_DEVCLASS_NET, components.put());
+				Microsoft::WRL::ComPtr<IEnumNetCfgComponent> components;
+				hr = netcfg->EnumComponents(&GUID_DEVCLASS_NET, &components);
 				if (SUCCEEDED(hr))
 				{
 					//Search possible bridge adapters
@@ -419,10 +421,10 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 							continue;
 
 						//Loop through components
-						wil::com_ptr_nothrow<INetCfgComponent> component;
+						Microsoft::WRL::ComPtr<INetCfgComponent> component;
 						while (true)
 						{
-							if (components->Next(1, component.put(), nullptr) != S_OK)
+							if (components->Next(1, &component, nullptr) != S_OK)
 								break;
 
 							GUID comInstGuid;
@@ -430,32 +432,35 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 
 							if (SUCCEEDED(hr) && IsEqualGUID(nameGuid, comInstGuid))
 							{
-								wil::unique_cotaskmem_string comId;
-								hr = component->GetId(comId.put());
+								LPWSTR comId;
+								hr = component->GetId(&comId);
 								if (!SUCCEEDED(hr))
 									continue;
 
+								ScopedGuard comId_guard([comId] {CoTaskMemFree(comId);});
+
 								//The bridge adapter for Win8+ has this ComponentID
 								//However not every adapter with this componentID is a bridge
-								if (wcscmp(L"compositebus\\ms_implat_mp", comId.get()) == 0)
+								if (wcscmp(L"compositebus\\ms_implat_mp", comId) == 0)
 								{
-									wil::unique_cotaskmem_string dispName;
-									hr = component->GetDisplayName(dispName.put());
+									LPWSTR dispName;
+									ScopedGuard dispName_guard([&] {CoTaskMemFree(dispName);});
+									hr = component->GetDisplayName(&dispName);
 									if (SUCCEEDED(hr))
-										Console.WriteLn(fmt::format("DEV9: {} is possible bridge (Check 2 passed)", StringUtil::WideStringToUTF8String(dispName.get())));
+										Console.WriteLn(fmt::format("DEV9: {} is possible bridge (Check 2 passed)", StringUtil::WideStringToUTF8String(dispName)));
 
 									//Check if adapter has the ms_bridge component bound to it.
-									auto bindings = bridge.try_query<INetCfgComponentBindings>();
-									if (!bindings)
+									Microsoft::WRL::ComPtr<INetCfgComponentBindings> bindings;
+									if (FAILED(bridge.As(&bindings)))
 										continue;
 
-									hr = bindings->IsBoundTo(component.get());
+									hr = bindings->IsBoundTo(component.Get());
 									if (hr != S_OK)
 										continue;
 
-									hr = component->GetDisplayName(dispName.put());
+									hr = component->GetDisplayName(&dispName);
 									if (SUCCEEDED(hr))
-										Console.WriteLn(fmt::format("DEV9: {} is bridge (Check 3 passed)", StringUtil::WideStringToUTF8String(dispName.get())));
+										Console.WriteLn(fmt::format("DEV9: {} is bridge (Check 3 passed)", StringUtil::WideStringToUTF8String(dispName)));
 
 									bridgeAdapter = cAdapterInfo;
 									break;
@@ -578,11 +583,11 @@ bool TAPAdapter::send(NetPacket* pkt)
 	if (NetAdapter::send(pkt))
 		return true;
 
-	DWORD writen;
+	DWORD written;
 	BOOL result = WriteFile(htap,
 		pkt->buffer,
 		pkt->size,
-		&writen,
+		&written,
 		&write);
 
 	if (!result)
@@ -591,13 +596,13 @@ bool TAPAdapter::send(NetPacket* pkt)
 		if (dwError == ERROR_IO_PENDING)
 		{
 			WaitForSingleObject(write.hEvent, INFINITE);
-			result = GetOverlappedResult(htap, &write, &writen, FALSE);
+			result = GetOverlappedResult(htap, &write, &written, FALSE);
 		}
 	}
 
 	if (result)
 	{
-		if (writen != pkt->size)
+		if (written != pkt->size)
 			return false;
 
 		return true;
