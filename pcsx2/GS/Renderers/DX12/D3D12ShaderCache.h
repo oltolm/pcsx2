@@ -6,19 +6,19 @@
 #include "common/Pcsx2Defs.h"
 #include "common/HashCombine.h"
 #include "common/RedtapeWindows.h"
-#include "common/RedtapeWilCom.h"
 
 #include <cstdio>
 #include <d3d12.h>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <wrl.h>
 
 class D3D12ShaderCache
 {
 public:
 	template <typename T>
-	using ComPtr = wil::com_ptr_nothrow<T>;
+	using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 	enum class EntryType
 	{

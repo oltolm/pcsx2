@@ -19,7 +19,7 @@
 #include <dxgi.h>
 #include <VersionHelpers.h>
 #include "GS/Renderers/DX11/D3D.h"
-#include <wil/com.h>
+#include <wrl.h>
 #endif
 
 namespace {
