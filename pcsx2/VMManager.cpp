@@ -62,15 +62,15 @@
 #include "fmt/format.h"
 
 #include <atomic>
+#include <memory>
 #include <mutex>
-#include <sstream>
 
 #ifdef _WIN32
-#include "common/RedtapeWindows.h"
+#include <Windows.h>
+#include <wrl/client.h>
 #include <objbase.h>
 #include <timeapi.h>
 #include <powrprof.h>
-#include <wil/com.h>
 #include <dxgi.h>
 #endif
 
@@ -2381,17 +2381,17 @@ inline void LogUserPowerPlan()
 
 	UCHAR aBuffer[2048];
 	DWORD aBufferSize = sizeof(aBuffer);
-	ret = PowerReadFriendlyName(NULL, pPwrGUID.get(), &NO_SUBGROUP_GUID, NULL, aBuffer, &aBufferSize);
+	ret = PowerReadFriendlyName(NULL, pPwrGUID, &NO_SUBGROUP_GUID, NULL, aBuffer, &aBufferSize);
 	std::string friendlyName(StringUtil::WideStringToUTF8String((wchar_t*)aBuffer));
 	if (ret != ERROR_SUCCESS)
 		return;
 
 	DWORD acMax = 0, acMin = 0, dcMax = 0, dcMin = 0;
 
-	if (PowerReadACValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &acMax) ||
-		PowerReadACValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &acMin) ||
-		PowerReadDCValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &dcMax) ||
-		PowerReadDCValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &dcMin))
+	if (PowerReadACValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &acMax) ||
+		PowerReadACValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &acMin) ||
+		PowerReadDCValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &dcMax) ||
+		PowerReadDCValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &dcMin))
 		return;
 
 	Console.WriteLnFmt(
@@ -2408,12 +2408,12 @@ void LogGPUCapabilities()
 {
 	Console.WriteLn(Color_StrongBlack, "Graphics Adapters Detected:");
 #if defined(_WIN32)
-	IDXGIFactory1* pFactory = nullptr;
-	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory)))
+	Microsoft::WRL::ComPtr<IDXGIFactory1> pFactory;
+	if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&pFactory))))
 		return;
 
 	UINT i = 0;
-	IDXGIAdapter* pAdapter = nullptr;
+	Microsoft::WRL::ComPtr<IDXGIAdapter> pAdapter;
 	while (pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC desc;
@@ -2430,21 +2430,12 @@ void LogGPUCapabilities()
 				umdver.QuadPart & 0xFFFF);
 
 			i++;
-			pAdapter->Release();
-			pAdapter = nullptr;
 		}
 		else
 		{
-			pAdapter->Release();
-			pAdapter = nullptr;
-
 			break;
 		}
 	}
-
-	if (pAdapter)
-		pAdapter->Release();
-	pFactory->Release();
 #else
 	// Credits to neofetch for the following (modified) script
 	std::string gpu_script = R"gpu_script(

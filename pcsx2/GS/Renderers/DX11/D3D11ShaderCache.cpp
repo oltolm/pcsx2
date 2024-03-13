@@ -263,7 +263,7 @@ D3D11ShaderCache::CacheIndexKey D3D11ShaderCache::GetCacheKey(
 	return key;
 }
 
-wil::com_ptr_nothrow<ID3DBlob> D3D11ShaderCache::GetShaderBlob(D3D::ShaderType type,
+Microsoft::WRL::ComPtr<ID3DBlob> D3D11ShaderCache::GetShaderBlob(D3D::ShaderType type,
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
@@ -272,8 +272,8 @@ wil::com_ptr_nothrow<ID3DBlob> D3D11ShaderCache::GetShaderBlob(D3D::ShaderType t
 	if (iter == m_index.end())
 		return CompileAndAddShaderBlob(key, shader_code, macros, entry_point);
 
-	wil::com_ptr_nothrow<ID3DBlob> blob;
-	HRESULT hr = D3DCreateBlob(iter->second.blob_size, blob.put());
+	Microsoft::WRL::ComPtr<ID3DBlob> blob;
+	HRESULT hr = D3DCreateBlob(iter->second.blob_size, &blob);
 	if (FAILED(hr) || std::fseek(m_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
 		std::fread(blob->GetBufferPointer(), 1, iter->second.blob_size, m_blob_file) != iter->second.blob_size)
 	{
@@ -284,17 +284,17 @@ wil::com_ptr_nothrow<ID3DBlob> D3D11ShaderCache::GetShaderBlob(D3D::ShaderType t
 	return blob;
 }
 
-wil::com_ptr_nothrow<ID3D11VertexShader> D3D11ShaderCache::GetVertexShader(ID3D11Device* device,
+Microsoft::WRL::ComPtr<ID3D11VertexShader> D3D11ShaderCache::GetVertexShader(ID3D11Device* device,
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
-	wil::com_ptr_nothrow<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Vertex, shader_code, macros, entry_point);
+	Microsoft::WRL::ComPtr<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Vertex, shader_code, macros, entry_point);
 	if (!blob)
 		return {};
 
-	wil::com_ptr_nothrow<ID3D11VertexShader> shader;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> shader;
 	const HRESULT hr =
-		device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, shader.put());
+		device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
 	if (FAILED(hr))
 	{
 		Console.Error("Failed to create vertex shader: 0x%08X", hr);
@@ -304,7 +304,7 @@ wil::com_ptr_nothrow<ID3D11VertexShader> D3D11ShaderCache::GetVertexShader(ID3D1
 	const char* shader_name = entry_point; // Ideally we'd feed in a proper name
 	if (shader_name)
 	{
-		GSDevice11::SetD3DDebugObjectName(shader.get(), shader_name);
+		GSDevice11::SetD3DDebugObjectName(shader.Get(), shader_name);
 	}
 
 	return shader;
@@ -315,12 +315,12 @@ bool D3D11ShaderCache::GetVertexShaderAndInputLayout(ID3D11Device* device, ID3D1
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
-	wil::com_ptr_nothrow<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Vertex, shader_code, macros, entry_point);
+	Microsoft::WRL::ComPtr<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Vertex, shader_code, macros, entry_point);
 	if (!blob)
 		return false;
 
-	wil::com_ptr_nothrow<ID3D11VertexShader> actual_vs;
-	HRESULT hr = device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, actual_vs.put());
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> actual_vs;
+	HRESULT hr = device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &actual_vs);
 	if (FAILED(hr))
 	{
 		Console.Error("Failed to create vertex shader: 0x%08X", hr);
@@ -330,7 +330,7 @@ bool D3D11ShaderCache::GetVertexShaderAndInputLayout(ID3D11Device* device, ID3D1
 	const char* shader_name = entry_point; // Ideally we'd feed in a proper name
 	if (shader_name)
 	{
-		GSDevice11::SetD3DDebugObjectName(actual_vs.get(), shader_name);
+		GSDevice11::SetD3DDebugObjectName(actual_vs.Get(), shader_name);
 	}
 
 	hr = device->CreateInputLayout(layout, layout_size, blob->GetBufferPointer(), blob->GetBufferSize(), il);
@@ -340,21 +340,21 @@ bool D3D11ShaderCache::GetVertexShaderAndInputLayout(ID3D11Device* device, ID3D1
 		return false;
 	}
 
-	*vs = actual_vs.detach();
+	*vs = actual_vs.Detach();
 	return true;
 }
 
-wil::com_ptr_nothrow<ID3D11PixelShader> D3D11ShaderCache::GetPixelShader(ID3D11Device* device,
+Microsoft::WRL::ComPtr<ID3D11PixelShader> D3D11ShaderCache::GetPixelShader(ID3D11Device* device,
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
-	wil::com_ptr_nothrow<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Pixel, shader_code, macros, entry_point);
+	Microsoft::WRL::ComPtr<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Pixel, shader_code, macros, entry_point);
 	if (!blob)
 		return {};
 
-	wil::com_ptr_nothrow<ID3D11PixelShader> shader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> shader;
 	const HRESULT hr =
-		device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, shader.put());
+		device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
 	if (FAILED(hr))
 	{
 		Console.Error("Failed to create pixel shader: 0x%08X", hr);
@@ -364,23 +364,23 @@ wil::com_ptr_nothrow<ID3D11PixelShader> D3D11ShaderCache::GetPixelShader(ID3D11D
 	const char* shader_name = entry_point; // Ideally we'd feed in a proper name
 	if (shader_name)
 	{
-		GSDevice11::SetD3DDebugObjectName(shader.get(), shader_name);
+		GSDevice11::SetD3DDebugObjectName(shader.Get(), shader_name);
 	}
 
 	return shader;
 }
 
-wil::com_ptr_nothrow<ID3D11ComputeShader> D3D11ShaderCache::GetComputeShader(ID3D11Device* device,
+Microsoft::WRL::ComPtr<ID3D11ComputeShader> D3D11ShaderCache::GetComputeShader(ID3D11Device* device,
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
-	wil::com_ptr_nothrow<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Compute, shader_code, macros, entry_point);
+	Microsoft::WRL::ComPtr<ID3DBlob> blob = GetShaderBlob(D3D::ShaderType::Compute, shader_code, macros, entry_point);
 	if (!blob)
 		return {};
 
-	wil::com_ptr_nothrow<ID3D11ComputeShader> shader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> shader;
 	const HRESULT hr =
-		device->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, shader.put());
+		device->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &shader);
 	if (FAILED(hr))
 	{
 		Console.Error("Failed to create compute shader: 0x%08X", hr);
@@ -390,16 +390,16 @@ wil::com_ptr_nothrow<ID3D11ComputeShader> D3D11ShaderCache::GetComputeShader(ID3
 	const char* shader_name = entry_point; // Ideally we'd feed in a proper name
 	if (shader_name)
 	{
-		GSDevice11::SetD3DDebugObjectName(shader.get(), shader_name);
+		GSDevice11::SetD3DDebugObjectName(shader.Get(), shader_name);
 	}
 
 	return shader;
 }
 
-wil::com_ptr_nothrow<ID3DBlob> D3D11ShaderCache::CompileAndAddShaderBlob(const CacheIndexKey& key,
+Microsoft::WRL::ComPtr<ID3DBlob> D3D11ShaderCache::CompileAndAddShaderBlob(const CacheIndexKey& key,
 	const std::string_view shader_code, const D3D_SHADER_MACRO* macros, const char* entry_point)
 {
-	wil::com_ptr_nothrow<ID3DBlob> blob =
+	Microsoft::WRL::ComPtr<ID3DBlob> blob =
 		D3D::CompileShader(key.shader_type, m_feature_level, m_debug, shader_code, macros, entry_point);
 	if (!blob)
 		return {};
