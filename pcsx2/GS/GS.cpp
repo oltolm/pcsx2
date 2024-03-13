@@ -561,9 +561,9 @@ void GSGetAdaptersAndFullscreenModes(
 			if (factory)
 			{
 				if (adapters)
-					*adapters = D3D::GetAdapterNames(factory.get());
+					*adapters = D3D::GetAdapterNames(factory.Get());
 				if (fullscreen_modes)
-					*fullscreen_modes = D3D::GetFullscreenModes(factory.get(), EmuConfig.GS.Adapter);
+					*fullscreen_modes = D3D::GetFullscreenModes(factory.Get(), EmuConfig.GS.Adapter);
 			}
 		}
 		break;

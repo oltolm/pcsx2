@@ -6,13 +6,13 @@
 #include "common/Pcsx2Defs.h"
 #include "common/HashCombine.h"
 #include "common/RedtapeWindows.h"
-#include "common/RedtapeWilCom.h"
 
 #include <bitset>
 #include <cstring>
 #include <d3d12.h>
 #include <unordered_map>
 #include <vector>
+#include <wrl.h>
 
 // This class provides an abstraction for D3D12 descriptor heaps.
 struct D3D12DescriptorHandle final
@@ -52,7 +52,7 @@ public:
 	D3D12DescriptorHeapManager();
 	~D3D12DescriptorHeapManager();
 
-	ID3D12DescriptorHeap* GetDescriptorHeap() const { return m_descriptor_heap.get(); }
+	ID3D12DescriptorHeap* GetDescriptorHeap() const { return m_descriptor_heap.Get(); }
 	u32 GetDescriptorIncrementSize() const { return m_descriptor_increment_size; }
 
 	bool Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, u32 num_descriptors, bool shader_visible);
@@ -63,7 +63,7 @@ public:
 	void Free(u32 index);
 
 private:
-	wil::com_ptr_nothrow<ID3D12DescriptorHeap> m_descriptor_heap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptor_heap;
 	u32 m_num_descriptors = 0;
 	u32 m_descriptor_increment_size = 0;
 	bool m_shader_visible = false;
@@ -82,7 +82,7 @@ public:
 	D3D12DescriptorAllocator();
 	~D3D12DescriptorAllocator();
 
-	__fi ID3D12DescriptorHeap* GetDescriptorHeap() const { return m_descriptor_heap.get(); }
+	__fi ID3D12DescriptorHeap* GetDescriptorHeap() const { return m_descriptor_heap.Get(); }
 	__fi u32 GetDescriptorIncrementSize() const { return m_descriptor_increment_size; }
 
 	bool Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, u32 num_descriptors);
@@ -92,7 +92,7 @@ public:
 	void Reset();
 
 private:
-	wil::com_ptr_nothrow<ID3D12DescriptorHeap> m_descriptor_heap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptor_heap;
 	u32 m_descriptor_increment_size = 0;
 	u32 m_num_descriptors = 0;
 	u32 m_current_offset = 0;
@@ -144,7 +144,7 @@ public:
 	bool ShouldReset() const;
 
 private:
-	wil::com_ptr_nothrow<ID3D12Device> m_device;
+	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
 	std::unordered_map<Key, D3D12DescriptorHandle, KeyHash> m_groups;
 };
 
@@ -168,7 +168,7 @@ template <u32 NumSamplers>
 void D3D12GroupedSamplerAllocator<NumSamplers>::Destroy()
 {
 	D3D12DescriptorAllocator::Destroy();
-	m_device.reset();
+	m_device.Reset();
 }
 
 template <u32 NumSamplers>

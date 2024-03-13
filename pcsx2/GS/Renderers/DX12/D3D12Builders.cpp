@@ -23,11 +23,11 @@ void D3D12::GraphicsPipelineBuilder::Clear()
 	m_desc.SampleDesc.Count = 1;
 }
 
-wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::GraphicsPipelineBuilder::Create(
+Microsoft::WRL::ComPtr<ID3D12PipelineState> D3D12::GraphicsPipelineBuilder::Create(
 	ID3D12Device* device, bool clear /*= true*/)
 {
-	wil::com_ptr_nothrow<ID3D12PipelineState> ps;
-	HRESULT hr = device->CreateGraphicsPipelineState(&m_desc, IID_PPV_ARGS(ps.put()));
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> ps;
+	HRESULT hr = device->CreateGraphicsPipelineState(&m_desc, IID_PPV_ARGS(&ps));
 	if (FAILED(hr))
 	{
 		Console.Error("CreateGraphicsPipelineState() failed: %08X", hr);
@@ -40,10 +40,10 @@ wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::GraphicsPipelineBuilder::Create
 	return ps;
 }
 
-wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::GraphicsPipelineBuilder::Create(
+Microsoft::WRL::ComPtr<ID3D12PipelineState> D3D12::GraphicsPipelineBuilder::Create(
 	ID3D12Device* device, D3D12ShaderCache& cache, bool clear /*= true*/)
 {
-	wil::com_ptr_nothrow<ID3D12PipelineState> pso = cache.GetPipelineState(device, m_desc);
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = cache.GetPipelineState(device, m_desc);
 	if (!pso)
 		return {};
 
@@ -225,11 +225,11 @@ void D3D12::ComputePipelineBuilder::Clear()
 	std::memset(&m_desc, 0, sizeof(m_desc));
 }
 
-wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::ComputePipelineBuilder::Create(
+Microsoft::WRL::ComPtr<ID3D12PipelineState> D3D12::ComputePipelineBuilder::Create(
 	ID3D12Device* device, bool clear /*= true*/)
 {
-	wil::com_ptr_nothrow<ID3D12PipelineState> ps;
-	HRESULT hr = device->CreateComputePipelineState(&m_desc, IID_PPV_ARGS(ps.put()));
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> ps;
+	HRESULT hr = device->CreateComputePipelineState(&m_desc, IID_PPV_ARGS(&ps));
 	if (FAILED(hr))
 	{
 		Console.Error("CreateComputePipelineState() failed: %08X", hr);
@@ -242,10 +242,10 @@ wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::ComputePipelineBuilder::Create(
 	return ps;
 }
 
-wil::com_ptr_nothrow<ID3D12PipelineState> D3D12::ComputePipelineBuilder::Create(
+Microsoft::WRL::ComPtr<ID3D12PipelineState> D3D12::ComputePipelineBuilder::Create(
 	ID3D12Device* device, D3D12ShaderCache& cache, bool clear /*= true*/)
 {
-	wil::com_ptr_nothrow<ID3D12PipelineState> pso = cache.GetPipelineState(device, m_desc);
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = cache.GetPipelineState(device, m_desc);
 	if (!pso)
 		return {};
 
@@ -280,9 +280,9 @@ void D3D12::RootSignatureBuilder::Clear()
 	m_num_descriptor_ranges = 0;
 }
 
-wil::com_ptr_nothrow<ID3D12RootSignature> D3D12::RootSignatureBuilder::Create(bool clear /*= true*/)
+Microsoft::WRL::ComPtr<ID3D12RootSignature> D3D12::RootSignatureBuilder::Create(bool clear /*= true*/)
 {
-	wil::com_ptr_nothrow<ID3D12RootSignature> rs = GSDevice12::GetInstance()->CreateRootSignature(&m_desc);
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rs = GSDevice12::GetInstance()->CreateRootSignature(&m_desc);
 	if (!rs)
 		return {};
 

@@ -28,14 +28,14 @@
 
 static u32 s_next_bad_shader_id = 1;
 
-wil::com_ptr_nothrow<IDXGIFactory5> D3D::CreateFactory(bool debug)
+Microsoft::WRL::ComPtr<IDXGIFactory5> D3D::CreateFactory(bool debug)
 {
 	UINT flags = 0;
 	if (debug)
 		flags |= DXGI_CREATE_FACTORY_DEBUG;
 
-	wil::com_ptr_nothrow<IDXGIFactory5> factory;
-	const HRESULT hr = CreateDXGIFactory2(flags, IID_PPV_ARGS(factory.put()));
+	Microsoft::WRL::ComPtr<IDXGIFactory5> factory;
+	const HRESULT hr = CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory));
 	if (FAILED(hr))
 		Console.Error("D3D: Failed to create DXGI factory: %08X", hr);
 
@@ -65,10 +65,10 @@ std::vector<std::string> D3D::GetAdapterNames(IDXGIFactory5* factory)
 {
 	std::vector<std::string> adapter_names;
 
-	wil::com_ptr_nothrow<IDXGIAdapter1> adapter;
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
 	for (u32 index = 0;; index++)
 	{
-		const HRESULT hr = factory->EnumAdapters1(index, adapter.put());
+		const HRESULT hr = factory->EnumAdapters1(index, &adapter);
 		if (hr == DXGI_ERROR_NOT_FOUND)
 			break;
 
@@ -78,7 +78,7 @@ std::vector<std::string> D3D::GetAdapterNames(IDXGIFactory5* factory)
 			continue;
 		}
 
-		adapter_names.push_back(FixupDuplicateAdapterNames(adapter_names, GetAdapterName(adapter.get())));
+		adapter_names.push_back(FixupDuplicateAdapterNames(adapter_names, GetAdapterName(adapter.Get())));
 	}
 
 	return adapter_names;
@@ -89,11 +89,11 @@ std::vector<std::string> D3D::GetFullscreenModes(IDXGIFactory5* factory, const s
 	std::vector<std::string> modes;
 	HRESULT hr;
 
-	wil::com_ptr_nothrow<IDXGIAdapter1> adapter = GetChosenOrFirstAdapter(factory, adapter_name);
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter = GetChosenOrFirstAdapter(factory, adapter_name);
 	if (!adapter)
 		return modes;
 
-	wil::com_ptr_nothrow<IDXGIOutput> output;
+	Microsoft::WRL::ComPtr<IDXGIOutput> output;
 	if (FAILED(hr = adapter->EnumOutputs(0, &output)))
 	{
 		Console.Error("EnumOutputs() failed: %08X", hr);
@@ -131,12 +131,12 @@ bool D3D::GetRequestedExclusiveFullscreenModeDesc(IDXGIFactory5* factory, const 
 
 	// The window might be on a different adapter to which we are rendering.. so we have to enumerate them all.
 	HRESULT hr;
-	wil::com_ptr_nothrow<IDXGIOutput> first_output, intersecting_output;
+	Microsoft::WRL::ComPtr<IDXGIOutput> first_output, intersecting_output;
 
 	for (u32 adapter_index = 0; !intersecting_output; adapter_index++)
 	{
-		wil::com_ptr_nothrow<IDXGIAdapter1> adapter;
-		hr = factory->EnumAdapters1(adapter_index, adapter.put());
+		Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
+		hr = factory->EnumAdapters1(adapter_index, &adapter);
 		if (hr == DXGI_ERROR_NOT_FOUND)
 			break;
 		else if (FAILED(hr))
@@ -144,9 +144,9 @@ bool D3D::GetRequestedExclusiveFullscreenModeDesc(IDXGIFactory5* factory, const 
 
 		for (u32 output_index = 0;; output_index++)
 		{
-			wil::com_ptr_nothrow<IDXGIOutput> this_output;
+			Microsoft::WRL::ComPtr<IDXGIOutput> this_output;
 			DXGI_OUTPUT_DESC output_desc;
-			hr = adapter->EnumOutputs(output_index, this_output.put());
+			hr = adapter->EnumOutputs(output_index, &this_output);
 			if (hr == DXGI_ERROR_NOT_FOUND)
 				break;
 			else if (FAILED(hr) || FAILED(this_output->GetDesc(&output_desc)))
@@ -191,12 +191,12 @@ bool D3D::GetRequestedExclusiveFullscreenModeDesc(IDXGIFactory5* factory, const 
 		return false;
 	}
 
-	*output = intersecting_output.get();
+	*output = intersecting_output.Get();
 	intersecting_output->AddRef();
 	return true;
 }
 
-wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetAdapterByName(IDXGIFactory5* factory, const std::string_view name)
+Microsoft::WRL::ComPtr<IDXGIAdapter1> D3D::GetAdapterByName(IDXGIFactory5* factory, const std::string_view name)
 {
 	if (name.empty())
 		return {};
@@ -205,10 +205,10 @@ wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetAdapterByName(IDXGIFactory5* factory
 	// We might have two GPUs with the same name... :)
 	std::vector<std::string> adapter_names;
 
-	wil::com_ptr_nothrow<IDXGIAdapter1> adapter;
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
 	for (u32 index = 0;; index++)
 	{
-		const HRESULT hr = factory->EnumAdapters1(index, adapter.put());
+		const HRESULT hr = factory->EnumAdapters1(index, &adapter);
 		if (hr == DXGI_ERROR_NOT_FOUND)
 			break;
 
@@ -218,7 +218,7 @@ wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetAdapterByName(IDXGIFactory5* factory
 			continue;
 		}
 
-		std::string adapter_name = FixupDuplicateAdapterNames(adapter_names, GetAdapterName(adapter.get()));
+		std::string adapter_name = FixupDuplicateAdapterNames(adapter_names, GetAdapterName(adapter.Get()));
 		if (adapter_name == name)
 		{
 			Console.WriteLn(fmt::format("D3D: Found adapter '{}'", adapter_name));
@@ -232,19 +232,19 @@ wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetAdapterByName(IDXGIFactory5* factory
 	return {};
 }
 
-wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetFirstAdapter(IDXGIFactory5* factory)
+Microsoft::WRL::ComPtr<IDXGIAdapter1> D3D::GetFirstAdapter(IDXGIFactory5* factory)
 {
-	wil::com_ptr_nothrow<IDXGIAdapter1> adapter;
-	HRESULT hr = factory->EnumAdapters1(0, adapter.put());
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
+	HRESULT hr = factory->EnumAdapters1(0, &adapter);
 	if (FAILED(hr))
 		Console.Error(fmt::format("IDXGIFactory2::EnumAdapters() for first adapter returned %08X", hr));
 
 	return adapter;
 }
 
-wil::com_ptr_nothrow<IDXGIAdapter1> D3D::GetChosenOrFirstAdapter(IDXGIFactory5* factory, const std::string_view name)
+Microsoft::WRL::ComPtr<IDXGIAdapter1> D3D::GetChosenOrFirstAdapter(IDXGIFactory5* factory, const std::string_view name)
 {
-	wil::com_ptr_nothrow<IDXGIAdapter1> adapter = GetAdapterByName(factory, name);
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter = GetAdapterByName(factory, name);
 	if (!adapter)
 		adapter = GetFirstAdapter(factory);
 
@@ -347,7 +347,7 @@ D3D::VendorID D3D::GetVendorID(IDXGIAdapter1* adapter)
 GSRendererType D3D::GetPreferredRenderer()
 {
 	const auto factory = CreateFactory(false);
-	const auto adapter = GetChosenOrFirstAdapter(factory.get(), GSConfig.Adapter);
+	const auto adapter = GetChosenOrFirstAdapter(factory.Get(), GSConfig.Adapter);
 
 	// If we somehow can't get a D3D11 device, it's unlikely any of the renderers are going to work.
 	if (!adapter)
@@ -361,7 +361,7 @@ GSRendererType D3D::GetPreferredRenderer()
 		};
 
 		D3D_FEATURE_LEVEL feature_level;
-		const HRESULT hr = D3D11CreateDevice(adapter.get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, std::data(check),
+		const HRESULT hr = D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, 0, std::data(check),
 			std::size(check), D3D11_SDK_VERSION, nullptr, &feature_level, nullptr);
 
 		if (FAILED(hr))
@@ -374,8 +374,8 @@ GSRendererType D3D::GetPreferredRenderer()
 		return feature_level;
 	};
 	const auto get_d3d12_device = [&adapter]() {
-		wil::com_ptr_nothrow<ID3D12Device> device;
-		const HRESULT hr = D3D12CreateDevice(adapter.get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(device.put()));
+		Microsoft::WRL::ComPtr<ID3D12Device> device;
+		const HRESULT hr = D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device));
 		if (FAILED(hr))
 			Console.Error("D3D12CreateDevice() for automatic renderer failed: %08X", hr);
 		return device;
@@ -419,7 +419,7 @@ GSRendererType D3D::GetPreferredRenderer()
 	static constexpr auto check_vulkan_supported = []() { return false; };
 #endif
 
-	switch (GetVendorID(adapter.get()))
+	switch (GetVendorID(adapter.Get()))
 	{
 		case VendorID::Nvidia:
 		{
@@ -482,7 +482,7 @@ GSRendererType D3D::GetPreferredRenderer()
 	}
 }
 
-wil::com_ptr_nothrow<ID3DBlob> D3D::CompileShader(D3D::ShaderType type, D3D_FEATURE_LEVEL feature_level, bool debug,
+Microsoft::WRL::ComPtr<ID3DBlob> D3D::CompileShader(D3D::ShaderType type, D3D_FEATURE_LEVEL feature_level, bool debug,
 	const std::string_view code, const D3D_SHADER_MACRO* macros /* = nullptr */,
 	const char* entry_point /* = "main" */)
 {
@@ -515,16 +515,16 @@ wil::com_ptr_nothrow<ID3DBlob> D3D::CompileShader(D3D::ShaderType type, D3D_FEAT
 	static constexpr UINT flags_non_debug = D3DCOMPILE_OPTIMIZATION_LEVEL3;
 	static constexpr UINT flags_debug = D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_DEBUG;
 
-	wil::com_ptr_nothrow<ID3DBlob> blob;
-	wil::com_ptr_nothrow<ID3DBlob> error_blob;
+	Microsoft::WRL::ComPtr<ID3DBlob> blob;
+	Microsoft::WRL::ComPtr<ID3DBlob> error_blob;
 	const HRESULT hr = D3DCompile(code.data(), code.size(), "0", macros, nullptr, entry_point, target,
-		debug ? flags_debug : flags_non_debug, 0, blob.put(), error_blob.put());
+		debug ? flags_debug : flags_non_debug, 0, &blob, &error_blob);
 
 	std::string error_string;
 	if (error_blob)
 	{
 		error_string.append(static_cast<const char*>(error_blob->GetBufferPointer()), error_blob->GetBufferSize());
-		error_blob.reset();
+		error_blob.Reset();
 	}
 
 	if (FAILED(hr))

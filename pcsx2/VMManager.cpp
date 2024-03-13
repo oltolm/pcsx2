@@ -60,7 +60,9 @@
 #include "discord_rpc.h"
 #include "fmt/core.h"
 
+#include <Windows.h>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <sstream>
 
@@ -69,7 +71,6 @@
 #include <objbase.h>
 #include <timeapi.h>
 #include <powrprof.h>
-#include <wil/com.h>
 #include <dxgi.h>
 #endif
 
@@ -2341,24 +2342,25 @@ bool VMManager::IsLoadableFileName(const std::string_view path)
 #ifdef _WIN32
 inline void LogUserPowerPlan()
 {
-	wil::unique_any<GUID*, decltype(&::LocalFree), ::LocalFree> pPwrGUID;
-	DWORD ret = PowerGetActiveScheme(NULL, pPwrGUID.put());
+	GUID* pPwrGUID;
+	DWORD ret = PowerGetActiveScheme(NULL, &pPwrGUID);
 	if (ret != ERROR_SUCCESS)
 		return;
+	ScopedGuard pwrGuidGuard([pPwrGUID]() { ::LocalFree(pPwrGUID); });
 
 	UCHAR aBuffer[2048];
 	DWORD aBufferSize = sizeof(aBuffer);
-	ret = PowerReadFriendlyName(NULL, pPwrGUID.get(), &NO_SUBGROUP_GUID, NULL, aBuffer, &aBufferSize);
+	ret = PowerReadFriendlyName(NULL, pPwrGUID, &NO_SUBGROUP_GUID, NULL, aBuffer, &aBufferSize);
 	std::string friendlyName(StringUtil::WideStringToUTF8String((wchar_t*)aBuffer));
 	if (ret != ERROR_SUCCESS)
 		return;
 
 	DWORD acMax = 0, acMin = 0, dcMax = 0, dcMin = 0;
 
-	if (PowerReadACValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &acMax) ||
-		PowerReadACValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &acMin) ||
-		PowerReadDCValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &dcMax) ||
-		PowerReadDCValueIndex(NULL, pPwrGUID.get(), &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &dcMin))
+	if (PowerReadACValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &acMax) ||
+		PowerReadACValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &acMin) ||
+		PowerReadDCValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &dcMax) ||
+		PowerReadDCValueIndex(NULL, pPwrGUID, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &dcMin))
 		return;
 
 	Console.WriteLnFmt(

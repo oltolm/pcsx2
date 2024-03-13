@@ -29,10 +29,10 @@ bool D3D12StreamBuffer::Create(u32 size)
 	allocationDesc.Flags = D3D12MA::ALLOCATION_FLAG_COMMITTED;
 	allocationDesc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
 
-	wil::com_ptr_nothrow<ID3D12Resource> buffer;
-	wil::com_ptr_nothrow<D3D12MA::Allocation> allocation;
+	Microsoft::WRL::ComPtr<ID3D12Resource> buffer;
+	Microsoft::WRL::ComPtr<D3D12MA::Allocation> allocation;
 	HRESULT hr = GSDevice12::GetInstance()->GetAllocator()->CreateResource(&allocationDesc, &resource_desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, allocation.put(), IID_PPV_ARGS(buffer.put()));
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &allocation, IID_PPV_ARGS(&buffer));
 	pxAssertMsg(SUCCEEDED(hr), "Allocate buffer");
 	if (FAILED(hr))
 		return false;
@@ -141,9 +141,9 @@ void D3D12StreamBuffer::Destroy(bool defer)
 	}
 
 	if (m_buffer && defer)
-		GSDevice12::GetInstance()->DeferResourceDestruction(m_allocation.get(), m_buffer.get());
-	m_buffer.reset();
-	m_allocation.reset();
+		GSDevice12::GetInstance()->DeferResourceDestruction(m_allocation.Get(), m_buffer.Get());
+	m_buffer.Reset();
+	m_allocation.Reset();
 
 	m_current_offset = 0;
 	m_current_space = 0;
