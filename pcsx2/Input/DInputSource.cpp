@@ -60,14 +60,14 @@ static constexpr std::array<const char*, DInputSource::NUM_HAT_DIRECTIONS> s_hat
 
 bool DInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex>& settings_lock)
 {
-	m_dinput_module.reset(LoadLibraryW(L"dinput8"));
+	m_dinput_module = LoadLibraryW(L"dinput8");
 	if (!m_dinput_module)
 	{
 		Console.Error("Failed to load DInput module.");
 		return false;
 	}
 
-	PFNDIRECTINPUT8CREATE create = reinterpret_cast<PFNDIRECTINPUT8CREATE>(GetProcAddress(m_dinput_module.get(), "DirectInput8Create"));
+	PFNDIRECTINPUT8CREATE create = reinterpret_cast<PFNDIRECTINPUT8CREATE>(GetProcAddress(m_dinput_module, "DirectInput8Create"));
 	if (!create)
 	{
 		Console.Error("Failed to get DInput function pointers.");
@@ -75,7 +75,7 @@ bool DInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex
 	}
 
 	HRESULT hr =
-		create(GetModuleHandleA(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8W, reinterpret_cast<LPVOID*>(m_dinput.put()), nullptr);
+		create(GetModuleHandleA(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8W, &m_dinput, nullptr);
 	if (FAILED(hr))
 	{
 		Console.Error("DirectInput8Create() failed: %08X", hr);
@@ -132,7 +132,7 @@ bool DInputSource::ReloadDevices()
 
 		ControllerData cd;
 		cd.guid = inst.guidInstance;
-		HRESULT hr = m_dinput->CreateDevice(inst.guidInstance, cd.device.put(), nullptr);
+		HRESULT hr = m_dinput->CreateDevice(inst.guidInstance, &cd.device, nullptr);
 		if (FAILED(hr))
 		{
 			Console.Warning("Failed to create instance of device [%s, %s]", inst.tszProductName, inst.tszInstanceName);
@@ -163,8 +163,8 @@ void DInputSource::Shutdown()
 	}
 
 	m_toplevel_window = nullptr;
-	m_dinput.reset();
-	m_dinput_module.reset();
+	m_dinput.Reset();
+	FreeLibrary(m_dinput_module);
 }
 
 bool DInputSource::IsInitialized()

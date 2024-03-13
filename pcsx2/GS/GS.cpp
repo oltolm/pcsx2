@@ -595,7 +595,7 @@ std::vector<GSAdapterInfo> GSGetAdapterInfo(GSRendererType renderer)
 		{
 			auto factory = D3D::CreateFactory(false);
 			if (factory)
-				ret = D3D::GetAdapterInfo(factory.get());
+				ret = D3D::GetAdapterInfo(factory.Get());
 		}
 		break;
 #endif
