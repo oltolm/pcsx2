@@ -20,6 +20,7 @@
 #include <VersionHelpers.h>
 #include "GS/Renderers/DX11/D3D.h"
 #include <wil/com.h>
+#include <wrl/client.h>
 #endif
 
 namespace {

@@ -7,15 +7,24 @@
 
 #include <dshow.h>
 #include <mutex>
+#include <wrl/client.h>
+#ifndef _MSC_VER
+#include <qedit.h>
+#endif
 
+#ifdef _MSC_VER
 #pragma comment(lib, "strmiids")
+#endif
 
 extern "C" {
+#ifdef _MSC_VER
 extern GUID IID_ISampleGrabberCB;
 extern GUID CLSID_SampleGrabber;
+#endif
 extern GUID CLSID_NullRenderer;
 }
 
+#ifdef _MSC_VER
 #pragma region qedit.h
 struct __declspec(uuid("0579154a-2b53-4994-b0d0-e773148eff85")) ISampleGrabberCB : IUnknown
 {
@@ -37,6 +46,7 @@ struct __declspec(uuid("6b652fff-11fe-4fce-92ad-0266b5d7c78f")) ISampleGrabber :
 struct __declspec(uuid("c1f400a0-3f08-11d3-9f0b-006008039e37")) SampleGrabber;
 
 #pragma endregion
+#endif
 
 
 #ifndef MAXLONGLONG
@@ -84,15 +94,15 @@ namespace usb_eyetoy
 
 		private:
 			wil::unique_couninitialize_call dshowCoInitialize{false};
-			ICaptureGraphBuilder2* pGraphBuilder;
-			IFilterGraph2* pGraph;
-			IMediaControl* pControl;
+			Microsoft::WRL::ComPtr<ICaptureGraphBuilder2> pGraphBuilder;
+			Microsoft::WRL::ComPtr<IFilterGraph2> pGraph;
+			Microsoft::WRL::ComPtr<IMediaControl> pControl;
 
-			IBaseFilter* sourcefilter;
-			IAMStreamConfig* pSourceConfig;
-			IBaseFilter* samplegrabberfilter;
-			ISampleGrabber* samplegrabber;
-			IBaseFilter* nullrenderer;
+			Microsoft::WRL::ComPtr<IBaseFilter> sourcefilter;
+			Microsoft::WRL::ComPtr<IAMStreamConfig> pSourceConfig;
+			Microsoft::WRL::ComPtr<IBaseFilter> samplegrabberfilter;
+			Microsoft::WRL::ComPtr<ISampleGrabber> samplegrabber;
+			Microsoft::WRL::ComPtr<IBaseFilter> nullrenderer;
 
 			class CallbackHandler : public ISampleGrabberCB
 			{
@@ -102,11 +112,11 @@ namespace usb_eyetoy
 
 				void SetCallback(DShowVideoCaptureCallback cb) { callback = cb; }
 
-				virtual HRESULT __stdcall SampleCB(double time, IMediaSample* sample);
-				virtual HRESULT __stdcall BufferCB(double time, BYTE* buffer, long len) { return S_OK; }
-				virtual HRESULT __stdcall QueryInterface(REFIID iid, LPVOID* ppv);
-				virtual ULONG __stdcall AddRef() { return 1; }
-				virtual ULONG __stdcall Release() { return 2; }
+				HRESULT __stdcall SampleCB(double time, IMediaSample* sample) override;
+				HRESULT __stdcall BufferCB(double time, BYTE* buffer, long len) override { return S_OK; }
+				HRESULT __stdcall QueryInterface(REFIID iid, LPVOID* ppv) override;
+				ULONG __stdcall AddRef() override { return 1; }
+				ULONG __stdcall Release() override { return 2; }
 
 			private:
 				DShowVideoCaptureCallback callback;

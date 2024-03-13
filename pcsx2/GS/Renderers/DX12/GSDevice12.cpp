@@ -26,9 +26,11 @@
 #include <sstream>
 #include <limits>
 
+#ifdef _MSC_VER
 #ifdef ENABLE_OGL_DEBUG
 #define USE_PIX
 #include "WinPixEventRuntime/pix3.h"
+#endif
 
 static u32 s_debug_scope_depth = 0;
 #endif
@@ -97,7 +99,7 @@ GSDevice12::ComPtr<ID3DBlob> GSDevice12::SerializeRootSignature(const D3D12_ROOT
 {
 	ComPtr<ID3DBlob> blob;
 	ComPtr<ID3DBlob> error_blob;
-	const HRESULT hr = D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, blob.put(), error_blob.put());
+	const HRESULT hr = D3D12SerializeRootSignature(desc, D3D_ROOT_SIGNATURE_VERSION_1, &blob, &error_blob);
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12SerializeRootSignature() failed: %08X", hr);
@@ -118,7 +120,7 @@ GSDevice12::ComPtr<ID3D12RootSignature> GSDevice12::CreateRootSignature(const D3
 
 	ComPtr<ID3D12RootSignature> rs;
 	const HRESULT hr =
-		m_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(rs.put()));
+		m_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&rs));
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12: CreateRootSignature() failed: %08X", hr);
@@ -130,7 +132,7 @@ GSDevice12::ComPtr<ID3D12RootSignature> GSDevice12::CreateRootSignature(const D3
 
 bool GSDevice12::SupportsTextureFormat(DXGI_FORMAT format)
 {
-	constexpr u32 required = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE;
+	const u32 required = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE;
 
 	D3D12_FEATURE_DATA_FORMAT_SUPPORT support = {format};
 	return SUCCEEDED(m_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))) &&
@@ -157,7 +159,7 @@ bool GSDevice12::CreateDevice(u32& vendor_id)
 	if (!m_dxgi_factory)
 		return false;
 
-	m_adapter = D3D::GetAdapterByName(m_dxgi_factory.get(), GSConfig.Adapter);
+	m_adapter = D3D::GetAdapterByName(m_dxgi_factory.Get(), GSConfig.Adapter);
 	vendor_id = GetAdapterVendorID();
 
 	HRESULT hr;
@@ -166,7 +168,7 @@ bool GSDevice12::CreateDevice(u32& vendor_id)
 	if (enable_debug_layer)
 	{
 		ComPtr<ID3D12Debug1> debug12;
-		hr = D3D12GetDebugInterface(IID_PPV_ARGS(debug12.put()));
+		hr = D3D12GetDebugInterface(IID_PPV_ARGS(&debug12));
 		if (SUCCEEDED(hr))
 		{
 			debug12->EnableDebugLayer();
@@ -183,7 +185,7 @@ bool GSDevice12::CreateDevice(u32& vendor_id)
 	// to get around this check if device can be created using feature level 12 (skylake+).
 	const bool isIntel = (vendor_id == 0x163C || vendor_id == 0x8086 || vendor_id == 0x8087);
 	// Create the actual device.
-	hr = D3D12CreateDevice(m_adapter.get(), isIntel ? D3D_FEATURE_LEVEL_12_0 : D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device));
+	hr = D3D12CreateDevice(m_adapter.Get(), isIntel ? D3D_FEATURE_LEVEL_12_0 : D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device));
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12: Failed to create device: %08X", hr);
@@ -193,14 +195,14 @@ bool GSDevice12::CreateDevice(u32& vendor_id)
 	if (!m_adapter)
 	{
 		const LUID luid(m_device->GetAdapterLuid());
-		if (FAILED(m_dxgi_factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(m_adapter.put()))))
+		if (FAILED(m_dxgi_factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&m_adapter))))
 			Console.Error("D3D12: Failed to get lookup adapter by device LUID");
 	}
 
 	if (enable_debug_layer)
 	{
-		ComPtr<ID3D12InfoQueue> info_queue = m_device.try_query<ID3D12InfoQueue>();
-		if (info_queue)
+		ComPtr<ID3D12InfoQueue> info_queue;
+		if (SUCCEEDED(m_device.As(&info_queue)))
 		{
 			if (IsDebuggerPresent())
 			{
@@ -232,13 +234,13 @@ bool GSDevice12::CreateDevice(u32& vendor_id)
 	}
 
 	D3D12MA::ALLOCATOR_DESC allocatorDesc = {};
-	allocatorDesc.pDevice = m_device.get();
-	allocatorDesc.pAdapter = m_adapter.get();
+	allocatorDesc.pDevice = m_device.Get();
+	allocatorDesc.pAdapter = m_adapter.Get();
 	allocatorDesc.Flags =
 		D3D12MA::ALLOCATOR_FLAG_SINGLETHREADED |
 		D3D12MA::ALLOCATOR_FLAG_DEFAULT_POOLS_NOT_ZEROED /* | D3D12MA::ALLOCATOR_FLAG_ALWAYS_COMMITTED*/;
 
-	hr = D3D12MA::CreateAllocator(&allocatorDesc, m_allocator.put());
+	hr = D3D12MA::CreateAllocator(&allocatorDesc, &m_allocator);
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12: CreateAllocator() failed with HRESULT %08X", hr);
@@ -269,10 +271,10 @@ bool GSDevice12::CreateDescriptorHeaps()
 	static constexpr size_t MAX_DSVS = 16384;
 	static constexpr size_t MAX_CPU_SAMPLERS = 1024;
 
-	if (!m_descriptor_heap_manager.Create(m_device.get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAX_SRVS, false) ||
-		!m_rtv_heap_manager.Create(m_device.get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, MAX_RTVS, false) ||
-		!m_dsv_heap_manager.Create(m_device.get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, MAX_DSVS, false) ||
-		!m_sampler_heap_manager.Create(m_device.get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MAX_CPU_SAMPLERS, false))
+	if (!m_descriptor_heap_manager.Create(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAX_SRVS, false) ||
+		!m_rtv_heap_manager.Create(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, MAX_RTVS, false) ||
+		!m_dsv_heap_manager.Create(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, MAX_DSVS, false) ||
+		!m_sampler_heap_manager.Create(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, MAX_CPU_SAMPLERS, false))
 	{
 		return false;
 	}
@@ -304,13 +306,13 @@ bool GSDevice12::CreateCommandLists()
 		for (u32 i = 0; i < 2; i++)
 		{
 			hr = m_device->CreateCommandAllocator(
-				D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(res.command_allocators[i].put()));
+				D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&res.command_allocators[i]));
 			pxAssertRel(SUCCEEDED(hr), "Create command allocator");
 			if (FAILED(hr))
 				return false;
 
-			hr = m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, res.command_allocators[i].get(),
-				nullptr, IID_PPV_ARGS(res.command_lists[i].put()));
+			hr = m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, res.command_allocators[i].Get(),
+				nullptr, IID_PPV_ARGS(&res.command_lists[i]));
 			if (FAILED(hr))
 			{
 				Console.Error("D3D12: Failed to create command list: %08X", hr);
@@ -324,13 +326,13 @@ bool GSDevice12::CreateCommandLists()
 				return false;
 		}
 
-		if (!res.descriptor_allocator.Create(m_device.get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAX_GPU_SRVS))
+		if (!res.descriptor_allocator.Create(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, MAX_GPU_SRVS))
 		{
 			Console.Error("D3D12: Failed to create per frame descriptor allocator");
 			return false;
 		}
 
-		if (!res.sampler_allocator.Create(m_device.get(), MAX_GPU_SAMPLERS))
+		if (!res.sampler_allocator.Create(m_device.Get(), MAX_GPU_SAMPLERS))
 		{
 			Console.Error("D3D12: Failed to create per frame sampler allocator");
 			return false;
@@ -354,7 +356,7 @@ void GSDevice12::MoveToNextCommandList()
 
 	// Begin command list.
 	res.command_allocators[1]->Reset();
-	res.command_lists[1]->Reset(res.command_allocators[1].get(), nullptr);
+	res.command_lists[1]->Reset(res.command_allocators[1].Get(), nullptr);
 	res.descriptor_allocator.Reset();
 	if (res.sampler_allocator.ShouldReset())
 		res.sampler_allocator.Reset();
@@ -386,7 +388,7 @@ void GSDevice12::MoveToNextCommandList()
 	res.has_timestamp_query = m_gpu_timing_enabled;
 	if (m_gpu_timing_enabled)
 	{
-		res.command_lists[1]->EndQuery(m_timestamp_query_heap.get(), D3D12_QUERY_TYPE_TIMESTAMP,
+		res.command_lists[1]->EndQuery(m_timestamp_query_heap.Get(), D3D12_QUERY_TYPE_TIMESTAMP,
 			m_current_command_list * NUM_TIMESTAMP_QUERIES_PER_CMDLIST);
 	}
 
@@ -405,12 +407,12 @@ ID3D12GraphicsCommandList4* GSDevice12::GetInitCommandList()
 		[[maybe_unused]] HRESULT hr = res.command_allocators[0]->Reset();
 		pxAssertMsg(SUCCEEDED(hr), "Reset init command allocator failed");
 
-		res.command_lists[0]->Reset(res.command_allocators[0].get(), nullptr);
+		res.command_lists[0]->Reset(res.command_allocators[0].Get(), nullptr);
 		pxAssertMsg(SUCCEEDED(hr), "Reset init command list failed");
 		res.init_command_list_used = true;
 	}
 
-	return res.command_lists[0].get();
+	return res.command_lists[0].Get();
 }
 
 bool GSDevice12::ExecuteCommandList(WaitType wait_for_completion)
@@ -421,11 +423,11 @@ bool GSDevice12::ExecuteCommandList(WaitType wait_for_completion)
 	if (res.has_timestamp_query)
 	{
 		// write the timestamp back at the end of the cmdlist
-		res.command_lists[1]->EndQuery(m_timestamp_query_heap.get(), D3D12_QUERY_TYPE_TIMESTAMP,
+		res.command_lists[1]->EndQuery(m_timestamp_query_heap.Get(), D3D12_QUERY_TYPE_TIMESTAMP,
 			(m_current_command_list * NUM_TIMESTAMP_QUERIES_PER_CMDLIST) + 1);
-		res.command_lists[1]->ResolveQueryData(m_timestamp_query_heap.get(), D3D12_QUERY_TYPE_TIMESTAMP,
+		res.command_lists[1]->ResolveQueryData(m_timestamp_query_heap.Get(), D3D12_QUERY_TYPE_TIMESTAMP,
 			m_current_command_list * NUM_TIMESTAMP_QUERIES_PER_CMDLIST, NUM_TIMESTAMP_QUERIES_PER_CMDLIST,
-			m_timestamp_query_buffer.get(), m_current_command_list * (sizeof(u64) * NUM_TIMESTAMP_QUERIES_PER_CMDLIST));
+			m_timestamp_query_buffer.Get(), m_current_command_list * (sizeof(u64) * NUM_TIMESTAMP_QUERIES_PER_CMDLIST));
 	}
 
 	if (res.init_command_list_used)
@@ -448,17 +450,17 @@ bool GSDevice12::ExecuteCommandList(WaitType wait_for_completion)
 
 	if (res.init_command_list_used)
 	{
-		const std::array<ID3D12CommandList*, 2> execute_lists{res.command_lists[0].get(), res.command_lists[1].get()};
+		const std::array<ID3D12CommandList*, 2> execute_lists{res.command_lists[0].Get(), res.command_lists[1].Get()};
 		m_command_queue->ExecuteCommandLists(static_cast<UINT>(execute_lists.size()), execute_lists.data());
 	}
 	else
 	{
-		const std::array<ID3D12CommandList*, 1> execute_lists{res.command_lists[1].get()};
+		const std::array<ID3D12CommandList*, 1> execute_lists{res.command_lists[1].Get()};
 		m_command_queue->ExecuteCommandLists(static_cast<UINT>(execute_lists.size()), execute_lists.data());
 	}
 
 	// Update fence when GPU has completed.
-	hr = m_command_queue->Signal(m_fence.get(), res.ready_fence_value);
+	hr = m_command_queue->Signal(m_fence.Get(), res.ready_fence_value);
 	pxAssertRel(SUCCEEDED(hr), "Signal fence");
 
 	MoveToNextCommandList();
@@ -479,7 +481,6 @@ void GSDevice12::DeferObjectDestruction(ID3D12DeviceChild* resource)
 	if (!resource)
 		return;
 
-	resource->AddRef();
 	m_command_lists[m_current_command_list].pending_resources.emplace_back(nullptr, resource);
 }
 
@@ -488,10 +489,6 @@ void GSDevice12::DeferResourceDestruction(D3D12MA::Allocation* allocation, ID3D1
 	if (!resource)
 		return;
 
-	if (allocation)
-		allocation->AddRef();
-
-	resource->AddRef();
 	m_command_lists[m_current_command_list].pending_resources.emplace_back(allocation, resource);
 }
 
@@ -515,12 +512,6 @@ void GSDevice12::DestroyPendingResources(CommandListResources& cmdlist)
 		dd.first.Free(dd.second);
 	cmdlist.pending_descriptors.clear();
 
-	for (const auto& it : cmdlist.pending_resources)
-	{
-		it.second->Release();
-		if (it.first)
-			it.first->Release();
-	}
 	cmdlist.pending_resources.clear();
 }
 
@@ -579,7 +570,7 @@ bool GSDevice12::CreateTimestampQuery()
 	constexpr u32 BUFFER_SIZE = sizeof(u64) * QUERY_COUNT;
 
 	const D3D12_QUERY_HEAP_DESC desc = {D3D12_QUERY_HEAP_TYPE_TIMESTAMP, QUERY_COUNT};
-	HRESULT hr = m_device->CreateQueryHeap(&desc, IID_PPV_ARGS(m_timestamp_query_heap.put()));
+	HRESULT hr = m_device->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_timestamp_query_heap));
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12: CreateQueryHeap() for timestamp failed with %08X", hr);
@@ -590,7 +581,7 @@ bool GSDevice12::CreateTimestampQuery()
 	const D3D12_RESOURCE_DESC resource_desc = {D3D12_RESOURCE_DIMENSION_BUFFER, 0, BUFFER_SIZE, 1, 1, 1,
 		DXGI_FORMAT_UNKNOWN, {1, 0}, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RESOURCE_FLAG_NONE};
 	hr = m_allocator->CreateResource(&allocation_desc, &resource_desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-		m_timestamp_query_allocation.put(), IID_PPV_ARGS(m_timestamp_query_buffer.put()));
+		&m_timestamp_query_allocation, IID_PPV_ARGS(&m_timestamp_query_buffer));
 	if (FAILED(hr))
 	{
 		Console.Error("D3D12: CreateResource() for timestamp failed with %08X", hr);
@@ -635,7 +626,7 @@ bool GSDevice12::AllocatePreinitializedGPUBuffer(u32 size, ID3D12Resource** gpu_
 	ComPtr<ID3D12Resource> cpu_buffer;
 	ComPtr<D3D12MA::Allocation> cpu_allocation;
 	HRESULT hr = m_allocator->CreateResource(
-		&cpu_ad, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, cpu_allocation.put(), IID_PPV_ARGS(cpu_buffer.put()));
+		&cpu_ad, &rd, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, &cpu_allocation, IID_PPV_ARGS(&cpu_buffer));
 	pxAssertMsg(SUCCEEDED(hr), "Allocate CPU buffer");
 	if (FAILED(hr))
 		return false;
@@ -658,7 +649,7 @@ bool GSDevice12::AllocatePreinitializedGPUBuffer(u32 size, ID3D12Resource** gpu_
 	if (FAILED(hr))
 		return false;
 
-	GetInitCommandList()->CopyBufferRegion(*gpu_buffer, 0, cpu_buffer.get(), 0, size);
+	GetInitCommandList()->CopyBufferRegion(*gpu_buffer, 0, cpu_buffer.Get(), 0, size);
 
 	D3D12_RESOURCE_BARRIER rb = {D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE};
 	rb.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -667,7 +658,7 @@ bool GSDevice12::AllocatePreinitializedGPUBuffer(u32 size, ID3D12Resource** gpu_
 	rb.Transition.StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER;
 	GetInitCommandList()->ResourceBarrier(1, &rb);
 
-	DeferResourceDestruction(cpu_allocation.get(), cpu_buffer.get());
+	DeferResourceDestruction(cpu_allocation.Get(), cpu_buffer.Get());
 	return true;
 }
 
@@ -696,7 +687,7 @@ bool GSDevice12::Create(GSVSyncMode vsync_mode, bool allow_present_throttle)
 		return false;
 	}
 
-	m_name = D3D::GetAdapterName(m_adapter.get());
+	m_name = D3D::GetAdapterName(m_adapter.Get());
 
 	if (!CreateDescriptorHeaps() || !CreateCommandLists() || !CreateTimestampQuery())
 		return false;
@@ -811,16 +802,16 @@ bool GSDevice12::CreateSwapChain()
 	GetClientRect(window_hwnd, &client_rc);
 
 	DXGI_MODE_DESC fullscreen_mode;
-	wil::com_ptr_nothrow<IDXGIOutput> fullscreen_output;
+	Microsoft::WRL::ComPtr<IDXGIOutput> fullscreen_output;
 	if (Host::IsFullscreen())
 	{
 		u32 fullscreen_width, fullscreen_height;
 		float fullscreen_refresh_rate;
 		m_is_exclusive_fullscreen =
 			GetRequestedExclusiveFullscreenMode(&fullscreen_width, &fullscreen_height, &fullscreen_refresh_rate) &&
-			D3D::GetRequestedExclusiveFullscreenModeDesc(m_dxgi_factory.get(), client_rc, fullscreen_width,
+			D3D::GetRequestedExclusiveFullscreenModeDesc(m_dxgi_factory.Get(), client_rc, fullscreen_width,
 				fullscreen_height, fullscreen_refresh_rate, swap_chain_format, &fullscreen_mode,
-				fullscreen_output.put());
+				&fullscreen_output);
 
 		// Using mailbox-style no-allow-tearing causes tearing in exclusive fullscreen.
 		if (m_vsync_mode == GSVSyncMode::Mailbox && m_is_exclusive_fullscreen)
@@ -863,8 +854,8 @@ bool GSDevice12::CreateSwapChain()
 		fs_desc.Windowed = FALSE;
 
 		Console.WriteLn("D3D12: Creating a %dx%d exclusive fullscreen swap chain", fs_sd_desc.Width, fs_sd_desc.Height);
-		hr = m_dxgi_factory->CreateSwapChainForHwnd(m_command_queue.get(), window_hwnd, &fs_sd_desc,
-			&fs_desc, fullscreen_output.get(), m_swap_chain.put());
+		hr = m_dxgi_factory->CreateSwapChainForHwnd(m_command_queue.Get(), window_hwnd, &fs_sd_desc,
+			&fs_desc, fullscreen_output.Get(), &m_swap_chain);
 		if (FAILED(hr))
 		{
 			Console.Warning("D3D12: Failed to create fullscreen swap chain, trying windowed.");
@@ -877,15 +868,15 @@ bool GSDevice12::CreateSwapChain()
 	{
 		Console.WriteLn("D3D12: Creating a %dx%d windowed swap chain", swap_chain_desc.Width, swap_chain_desc.Height);
 		hr = m_dxgi_factory->CreateSwapChainForHwnd(
-			m_command_queue.get(), window_hwnd, &swap_chain_desc, nullptr, nullptr, m_swap_chain.put());
+			m_command_queue.Get(), window_hwnd, &swap_chain_desc, nullptr, nullptr, &m_swap_chain);
 
 		if (FAILED(hr))
 			Console.Warning("D3D12: Failed to create windowed swap chain.");
 	}
 
 	// MWA needs to be called on the correct factory.
-	wil::com_ptr_nothrow<IDXGIFactory> swap_chain_factory;
-	hr = m_swap_chain->GetParent(IID_PPV_ARGS(swap_chain_factory.put()));
+	ComPtr<IDXGIFactory> swap_chain_factory;
+	hr = m_swap_chain->GetParent(IID_PPV_ARGS(&swap_chain_factory));
 	if (SUCCEEDED(hr))
 	{
 		hr = swap_chain_factory->MakeWindowAssociation(window_hwnd, DXGI_MWA_NO_WINDOW_CHANGES);
@@ -926,7 +917,7 @@ bool GSDevice12::CreateSwapChainRTV()
 	for (u32 i = 0; i < swap_chain_desc.BufferCount; i++)
 	{
 		ComPtr<ID3D12Resource> backbuffer;
-		hr = m_swap_chain->GetBuffer(i, IID_PPV_ARGS(backbuffer.put()));
+		hr = m_swap_chain->GetBuffer(i, IID_PPV_ARGS(&backbuffer));
 		if (FAILED(hr))
 		{
 			Console.Error("D3D12: GetBuffer for RTV failed: 0x%08X", hr);
@@ -987,7 +978,7 @@ void GSDevice12::DestroySwapChain()
 	if (SUCCEEDED(m_swap_chain->GetFullscreenState(&is_fullscreen, nullptr)) && is_fullscreen)
 		m_swap_chain->SetFullscreenState(FALSE, nullptr);
 
-	m_swap_chain.reset();
+	m_swap_chain.Reset();
 	m_is_exclusive_fullscreen = false;
 }
 
@@ -1432,9 +1423,9 @@ void GSDevice12::DoStretchRect(GSTexture* sTex, const GSVector4& sRect, GSTextur
 	const bool allow_discard = (cms.wrgba == 0xf);
 	const ID3D12PipelineState* state;
 	if (HasVariableWriteMask(shader))
-		state = m_color_copy[GetShaderIndexForMask(shader, cms.wrgba)].get();
+		state = m_color_copy[GetShaderIndexForMask(shader, cms.wrgba)].Get();
 	else
-		state = dTex ? m_convert[static_cast<int>(shader)].get() : m_present[static_cast<int>(shader)].get();
+		state = dTex ? m_convert[static_cast<int>(shader)].Get() : m_present[static_cast<int>(shader)].Get();
 	DoStretchRect(static_cast<GSTexture12*>(sTex), sRect, static_cast<GSTexture12*>(dTex), dRect,
 		state, linear, allow_discard);
 }
@@ -1450,7 +1441,7 @@ void GSDevice12::PresentRect(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 	SetUtilityPushConstants(&cb, sizeof(cb));
 
 	DoStretchRect(static_cast<GSTexture12*>(sTex), sRect, static_cast<GSTexture12*>(dTex), dRect,
-		m_present[static_cast<int>(shader)].get(), linear, true);
+		m_present[static_cast<int>(shader)].Get(), linear, true);
 }
 
 void GSDevice12::UpdateCLUTTexture(
@@ -1471,7 +1462,7 @@ void GSDevice12::UpdateCLUTTexture(
 	const GSVector4 dRect(0, 0, dSize, 1);
 	const ShaderConvert shader = (dSize == 16) ? ShaderConvert::CLUT_4 : ShaderConvert::CLUT_8;
 	DoStretchRect(static_cast<GSTexture12*>(sTex), GSVector4::zero(), static_cast<GSTexture12*>(dTex), dRect,
-		m_convert[static_cast<int>(shader)].get(), false, true);
+		m_convert[static_cast<int>(shader)].Get(), false, true);
 }
 
 void GSDevice12::ConvertToIndexedTexture(
@@ -1492,7 +1483,7 @@ void GSDevice12::ConvertToIndexedTexture(
 	const GSVector4 dRect(0, 0, dTex->GetWidth(), dTex->GetHeight());
 	const ShaderConvert shader = ((SPSM & 0xE) == 0) ? ShaderConvert::RGBA_TO_8I : ShaderConvert::RGB5A1_TO_8I;
 	DoStretchRect(static_cast<GSTexture12*>(sTex), GSVector4::zero(), static_cast<GSTexture12*>(dTex), dRect,
-		m_convert[static_cast<int>(shader)].get(), false, true);
+		m_convert[static_cast<int>(shader)].Get(), false, true);
 }
 
 void GSDevice12::FilteredDownsampleTexture(GSTexture* sTex, GSTexture* dTex, u32 downsample_factor, const GSVector2i& clamp_min, const GSVector4& dRect)
@@ -1515,7 +1506,7 @@ void GSDevice12::FilteredDownsampleTexture(GSTexture* sTex, GSTexture* dTex, u32
 	//const GSVector4 dRect = GSVector4(dTex->GetRect());
 	const ShaderConvert shader = ShaderConvert::DOWNSAMPLE_COPY;
 	DoStretchRect(static_cast<GSTexture12*>(sTex), GSVector4::zero(), static_cast<GSTexture12*>(dTex), dRect,
-		m_convert[static_cast<int>(shader)].get(), false, true);
+		m_convert[static_cast<int>(shader)].Get(), false, true);
 }
 
 void GSDevice12::DrawMultiStretchRects(
@@ -1629,8 +1620,8 @@ void GSDevice12::DoMultiStretchRects(
 
 	pxAssert(HasVariableWriteMask(shader) || rects[0].wmask.wrgba == 0xf);
 	SetPipeline((rects[0].wmask.wrgba != 0xf) ?
-		m_color_copy[GetShaderIndexForMask(shader, rects[0].wmask.wrgba)].get() :
-		m_convert[static_cast<int>(shader)].get());
+		m_color_copy[GetShaderIndexForMask(shader, rects[0].wmask.wrgba)].Get() :
+		m_convert[static_cast<int>(shader)].Get());
 
 	if (ApplyUtilityState())
 		DrawIndexedPrimitive();
@@ -1775,7 +1766,7 @@ void GSDevice12::DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, 
 			D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS, D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS,
 			D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS, GSVector4::unorm8(c));
 		SetUtilityRootSignature();
-		SetPipeline(m_convert[static_cast<int>(ShaderConvert::COPY)].get());
+		SetPipeline(m_convert[static_cast<int>(ShaderConvert::COPY)].Get());
 		DrawStretchRect(sRect[1], PMODE.SLBG ? dRect[2] : dRect[1], dsize);
 		dTex->SetState(GSTexture::State::Dirty);
 		dcleared = true;
@@ -1796,7 +1787,7 @@ void GSDevice12::DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, 
 		if (dcleared)
 		{
 			SetUtilityRootSignature();
-			SetPipeline(m_convert[static_cast<int>(ShaderConvert::YUV)].get());
+			SetPipeline(m_convert[static_cast<int>(ShaderConvert::YUV)].Get());
 			DrawStretchRect(full_r, dRect[2], fbsize);
 		}
 		EndRenderPass();
@@ -1831,7 +1822,7 @@ void GSDevice12::DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, 
 		// 1st output is enabled. It must be blended
 		SetUtilityRootSignature();
 		SetUtilityTexture(sTex[0], sampler);
-		SetPipeline(m_merge[PMODE.MMOD].get());
+		SetPipeline(m_merge[PMODE.MMOD].Get());
 		DrawStretchRect(sRect[0], dRect[0], dTex->GetSize());
 	}
 
@@ -1839,7 +1830,7 @@ void GSDevice12::DoMerge(GSTexture* sTex[3], GSVector4* sRect, GSTexture* dTex, 
 	{
 		EndRenderPass();
 		SetUtilityRootSignature();
-		SetPipeline(m_convert[static_cast<int>(ShaderConvert::YUV)].get());
+		SetPipeline(m_convert[static_cast<int>(ShaderConvert::YUV)].Get());
 		SetUtilityTexture(dTex, sampler);
 		OMSetRenderTargets(sTex[2], nullptr, fbarea);
 		BeginRenderPass(
@@ -1867,7 +1858,7 @@ void GSDevice12::DoInterlace(GSTexture* sTex, const GSVector4& sRect, GSTexture*
 	SetUtilityRootSignature();
 	SetUtilityTexture(sTex, linear ? m_linear_sampler_cpu : m_point_sampler_cpu);
 	BeginRenderPassForStretchRect(static_cast<GSTexture12*>(dTex), dTex->GetRect(), clamped_rc, false);
-	SetPipeline(m_interlace[static_cast<int>(shader)].get());
+	SetPipeline(m_interlace[static_cast<int>(shader)].Get());
 	SetUtilityPushConstants(&cb, sizeof(cb));
 	DrawStretchRect(sRect, dRect, dTex->GetSize());
 	EndRenderPass();
@@ -1887,7 +1878,7 @@ void GSDevice12::DoShadeBoost(GSTexture* sTex, GSTexture* dTex, const float para
 	BeginRenderPass(D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
 		D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS);
 	dTex->SetState(GSTexture::State::Dirty);
-	SetPipeline(m_shadeboost_pipeline.get());
+	SetPipeline(m_shadeboost_pipeline.Get());
 	SetUtilityPushConstants(params, sizeof(float) * 4);
 	DrawStretchRect(sRect, GSVector4(dRect), dTex->GetSize());
 	EndRenderPass();
@@ -1906,7 +1897,7 @@ void GSDevice12::DoFXAA(GSTexture* sTex, GSTexture* dTex)
 	BeginRenderPass(D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
 		D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS);
 	dTex->SetState(GSTexture::State::Dirty);
-	SetPipeline(m_fxaa_pipeline.get());
+	SetPipeline(m_fxaa_pipeline.Get());
 	DrawStretchRect(sRect, GSVector4(dRect), dTex->GetSize());
 	EndRenderPass();
 
@@ -1935,11 +1926,11 @@ bool GSDevice12::CompileCASPipelines()
 		return false;
 
 	D3D12::ComputePipelineBuilder cpb;
-	cpb.SetRootSignature(m_cas_root_signature.get());
+	cpb.SetRootSignature(m_cas_root_signature.Get());
 	cpb.SetShader(cs_upscale->GetBufferPointer(), cs_upscale->GetBufferSize());
-	m_cas_upscale_pipeline = cpb.Create(m_device.get(), m_shader_cache, false);
+	m_cas_upscale_pipeline = cpb.Create(m_device.Get(), m_shader_cache, false);
 	cpb.SetShader(cs_sharpen->GetBufferPointer(), cs_sharpen->GetBufferSize());
-	m_cas_sharpen_pipeline = cpb.Create(m_device.get(), m_shader_cache, false);
+	m_cas_sharpen_pipeline = cpb.Create(m_device.Get(), m_shader_cache, false);
 	if (!m_cas_upscale_pipeline || !m_cas_sharpen_pipeline)
 	{
 		Console.Error("D3D12: Failed to create CAS pipelines");
@@ -1967,27 +1958,27 @@ bool GSDevice12::CompileImGuiPipeline()
 	}
 
 	D3D12::GraphicsPipelineBuilder gpb;
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	gpb.AddVertexAttribute("POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(ImDrawVert, pos));
 	gpb.AddVertexAttribute("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(ImDrawVert, uv));
 	gpb.AddVertexAttribute("COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, offsetof(ImDrawVert, col));
 	gpb.SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	gpb.SetVertexShader(vs.get());
-	gpb.SetPixelShader(ps.get());
+	gpb.SetVertexShader(vs.Get());
+	gpb.SetPixelShader(ps.Get());
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoDepthTestState();
 	gpb.SetBlendState(0, true, D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD, D3D12_BLEND_ONE,
 		D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD);
 	gpb.SetRenderTarget(0, DXGI_FORMAT_R8G8B8A8_UNORM);
 
-	m_imgui_pipeline = gpb.Create(m_device.get(), m_shader_cache, false);
+	m_imgui_pipeline = gpb.Create(m_device.Get(), m_shader_cache, false);
 	if (!m_imgui_pipeline)
 	{
 		Console.Error("D3D12: Failed to compile ImGui pipeline");
 		return false;
 	}
 
-	D3D12::SetObjectName(m_imgui_pipeline.get(), "ImGui pipeline");
+	D3D12::SetObjectName(m_imgui_pipeline.Get(), "ImGui pipeline");
 	return true;
 }
 
@@ -2017,7 +2008,7 @@ void GSDevice12::RenderImGui()
 
 	SetUtilityRootSignature();
 	SetUtilityPushConstants(ortho_projection, sizeof(ortho_projection));
-	SetPipeline(m_imgui_pipeline.get());
+	SetPipeline(m_imgui_pipeline.Get());
 	SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	if (m_utility_sampler_cpu != m_linear_sampler_cpu)
@@ -2126,12 +2117,12 @@ bool GSDevice12::DoCAS(
 	sTex12->TransitionToState(cmdlist, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	dTex12->TransitionToState(cmdlist, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-	cmdlist->SetComputeRootSignature(m_cas_root_signature.get());
+	cmdlist->SetComputeRootSignature(m_cas_root_signature.Get());
 	cmdlist->SetComputeRoot32BitConstants(
 		CAS_ROOT_SIGNATURE_PARAM_PUSH_CONSTANTS, NUM_CAS_CONSTANTS, constants.data(), 0);
 	cmdlist->SetComputeRootDescriptorTable(CAS_ROOT_SIGNATURE_PARAM_SRC_TEXTURE, sTexDH);
 	cmdlist->SetComputeRootDescriptorTable(CAS_ROOT_SIGNATURE_PARAM_DST_TEXTURE, dTexDH);
-	cmdlist->SetPipelineState(sharpen_only ? m_cas_sharpen_pipeline.get() : m_cas_upscale_pipeline.get());
+	cmdlist->SetPipelineState(sharpen_only ? m_cas_sharpen_pipeline.Get() : m_cas_upscale_pipeline.Get());
 	m_dirty_flags |= DIRTY_FLAG_PIPELINE;
 
 	static const int threadGroupWorkRegionDim = 16;
@@ -2273,7 +2264,7 @@ bool GSDevice12::GetSampler(D3D12DescriptorHandle* cpu_handle, GSHWDrawConfig::S
 	if (!GetSamplerHeapManager().Allocate(cpu_handle))
 		return false;
 
-	m_device.get()->CreateSampler(&sd, *cpu_handle);
+	m_device.Get()->CreateSampler(&sd, *cpu_handle);
 	m_samplers.emplace(ss.key, *cpu_handle);
 	return true;
 }
@@ -2300,7 +2291,7 @@ bool GSDevice12::GetTextureGroupDescriptors(
 
 	if (count == 1)
 	{
-		m_device.get()->CopyDescriptorsSimple(
+		m_device.Get()->CopyDescriptorsSimple(
 			1, *gpu_handle, cpu_handles[0], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		return true;
 	}
@@ -2314,7 +2305,7 @@ bool GSDevice12::GetTextureGroupDescriptors(
 		src_handles[i] = cpu_handles[i];
 		src_sizes[i] = 1;
 	}
-	m_device.get()->CopyDescriptors(
+	m_device.Get()->CopyDescriptors(
 		1, &dst_handle, &count, count, src_handles, src_sizes, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	return true;
 }
@@ -2407,7 +2398,7 @@ bool GSDevice12::CreateRootSignatures()
 	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0, NUM_UTILITY_SAMPLERS, D3D12_SHADER_VISIBILITY_PIXEL);
 	if (!(m_utility_root_signature = rsb.Create()))
 		return false;
-	D3D12::SetObjectName(m_utility_root_signature.get(), "Convert root signature");
+	D3D12::SetObjectName(m_utility_root_signature.Get(), "Convert root signature");
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw/TFX Pipeline Layout
@@ -2421,7 +2412,7 @@ bool GSDevice12::CreateRootSignatures()
 	rsb.AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 2, D3D12_SHADER_VISIBILITY_PIXEL);
 	if (!(m_tfx_root_signature = rsb.Create()))
 		return false;
-	D3D12::SetObjectName(m_tfx_root_signature.get(), "TFX root signature");
+	D3D12::SetObjectName(m_tfx_root_signature.Get(), "TFX root signature");
 	return true;
 }
 
@@ -2439,11 +2430,11 @@ bool GSDevice12::CompileConvertPipelines()
 		return false;
 
 	D3D12::GraphicsPipelineBuilder gpb;
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	AddUtilityVertexAttributes(gpb);
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoBlendingState();
-	gpb.SetVertexShader(m_convert_vs.get());
+	gpb.SetVertexShader(m_convert_vs.Get());
 
 	for (ShaderConvert i = ShaderConvert::COPY; i < ShaderConvert::Count; i = static_cast<ShaderConvert>(static_cast<int>(i) + 1))
 	{
@@ -2501,13 +2492,13 @@ bool GSDevice12::CompileConvertPipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 
-		m_convert[index] = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_convert[index] = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_convert[index])
 			return false;
 
-		D3D12::SetObjectName(m_convert[index].get(), TinyString::from_format("Convert pipeline {}", static_cast<int>(i)));
+		D3D12::SetObjectName(m_convert[index].Get(), TinyString::from_format("Convert pipeline {}", static_cast<int>(i)));
 
 		if (i == ShaderConvert::COPY)
 		{
@@ -2519,11 +2510,11 @@ bool GSDevice12::CompileConvertPipelines()
 				pxAssert(!m_color_copy[j]);
 				gpb.SetBlendState(0, false, D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, D3D12_BLEND_ONE,
 					D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, static_cast<u8>(j));
-				m_color_copy[j] = gpb.Create(m_device.get(), m_shader_cache, false);
+				m_color_copy[j] = gpb.Create(m_device.Get(), m_shader_cache, false);
 				if (!m_color_copy[j])
 					return false;
 
-				D3D12::SetObjectName(m_color_copy[j].get(), TinyString::from_format("Color copy pipeline (r={}, g={}, b={}, a={})",
+				D3D12::SetObjectName(m_color_copy[j].Get(), TinyString::from_format("Color copy pipeline (r={}, g={}, b={}, a={})",
 					j & 1u, (j >> 1) & 1u, (j >> 2) & 1u, (j >> 3) & 1u));
 			}
 		}
@@ -2537,11 +2528,11 @@ bool GSDevice12::CompileConvertPipelines()
 				pxAssert(!m_color_copy[j]);
 				gpb.SetBlendState(0, false, D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, D3D12_BLEND_ONE,
 					D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, static_cast<u8>(j - 16));
-				m_color_copy[j] = gpb.Create(m_device.get(), m_shader_cache, false);
+				m_color_copy[j] = gpb.Create(m_device.Get(), m_shader_cache, false);
 				if (!m_color_copy[j])
 					return false;
 
-				D3D12::SetObjectName(m_color_copy[j].get(), TinyString::from_format("Color copy pipeline (r={}, g={}, b={}, a={})",
+				D3D12::SetObjectName(m_color_copy[j].Get(), TinyString::from_format("Color copy pipeline (r={}, g={}, b={}, a={})",
 																j & 1u, (j >> 1) & 1u, (j >> 2) & 1u, (j >> 3) & 1u));
 			}
 		}
@@ -2555,11 +2546,11 @@ bool GSDevice12::CompileConvertPipelines()
 
 				gpb.SetRenderTarget(0, is_setup ? DXGI_FORMAT_R16G16B16A16_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM);
 				gpb.SetDepthStencilFormat(ds ? DXGI_FORMAT_D32_FLOAT_S8X24_UINT : DXGI_FORMAT_UNKNOWN);
-				arr[ds] = gpb.Create(m_device.get(), m_shader_cache, false);
+				arr[ds] = gpb.Create(m_device.Get(), m_shader_cache, false);
 				if (!arr[ds])
 					return false;
 
-				D3D12::SetObjectName(arr[ds].get(), TinyString::from_format("ColorClip {}/copy pipeline (ds={})", is_setup ? "setup" : "finish", ds));
+				D3D12::SetObjectName(arr[ds].Get(), TinyString::from_format("ColorClip {}/copy pipeline (ds={})", is_setup ? "setup" : "finish", ds));
 			}
 		}
 	}
@@ -2571,9 +2562,9 @@ bool GSDevice12::CompileConvertPipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetRootSignature(m_utility_root_signature.get());
+		gpb.SetRootSignature(m_utility_root_signature.Get());
 		gpb.SetRenderTarget(0, DXGI_FORMAT_R32_FLOAT);
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 		gpb.SetNoDepthTestState();
 		gpb.SetNoStencilState();
 		gpb.SetBlendState(0, false, D3D12_BLEND_ONE, D3D12_BLEND_ONE, D3D12_BLEND_OP_ADD, D3D12_BLEND_ZERO,
@@ -2582,11 +2573,11 @@ bool GSDevice12::CompileConvertPipelines()
 		for (u32 ds = 0; ds < 2; ds++)
 		{
 			gpb.SetDepthStencilFormat(ds ? DXGI_FORMAT_D32_FLOAT_S8X24_UINT : DXGI_FORMAT_UNKNOWN);
-			m_date_image_setup_pipelines[ds][datm] = gpb.Create(m_device.get(), m_shader_cache, false);
+			m_date_image_setup_pipelines[ds][datm] = gpb.Create(m_device.Get(), m_shader_cache, false);
 			if (!m_date_image_setup_pipelines[ds][datm])
 				return false;
 
-			D3D12::SetObjectName(m_date_image_setup_pipelines[ds][datm].get(),
+			D3D12::SetObjectName(m_date_image_setup_pipelines[ds][datm].Get(),
 				TinyString::from_format("DATE image clear pipeline (ds={}, datm={})", ds, (datm == 1 || datm == 3)));
 		}
 	}
@@ -2608,11 +2599,11 @@ bool GSDevice12::CompilePresentPipelines()
 		return false;
 
 	D3D12::GraphicsPipelineBuilder gpb;
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	AddUtilityVertexAttributes(gpb);
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoBlendingState();
-	gpb.SetVertexShader(vs.get());
+	gpb.SetVertexShader(vs.Get());
 	gpb.SetDepthState(false, false, D3D12_COMPARISON_FUNC_ALWAYS);
 	gpb.SetNoStencilState();
 	gpb.SetRenderTarget(0, DXGI_FORMAT_R8G8B8A8_UNORM);
@@ -2625,13 +2616,13 @@ bool GSDevice12::CompilePresentPipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 
-		m_present[index] = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_present[index] = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_present[index])
 			return false;
 
-		D3D12::SetObjectName(m_present[index].get(), TinyString::from_format("Present pipeline {}", static_cast<int>(i)));
+		D3D12::SetObjectName(m_present[index].Get(), TinyString::from_format("Present pipeline {}", static_cast<int>(i)));
 	}
 
 	return true;
@@ -2648,12 +2639,12 @@ bool GSDevice12::CompileInterlacePipelines()
 
 	D3D12::GraphicsPipelineBuilder gpb;
 	AddUtilityVertexAttributes(gpb);
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoDepthTestState();
 	gpb.SetNoBlendingState();
 	gpb.SetRenderTarget(0, DXGI_FORMAT_R8G8B8A8_UNORM);
-	gpb.SetVertexShader(m_convert_vs.get());
+	gpb.SetVertexShader(m_convert_vs.Get());
 
 	for (int i = 0; i < static_cast<int>(m_interlace.size()); i++)
 	{
@@ -2661,13 +2652,13 @@ bool GSDevice12::CompileInterlacePipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 
-		m_interlace[i] = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_interlace[i] = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_interlace[i])
 			return false;
 
-		D3D12::SetObjectName(m_interlace[i].get(), TinyString::from_format("Interlace pipeline {}", static_cast<int>(i)));
+		D3D12::SetObjectName(m_interlace[i].Get(), TinyString::from_format("Interlace pipeline {}", static_cast<int>(i)));
 	}
 
 	return true;
@@ -2684,11 +2675,11 @@ bool GSDevice12::CompileMergePipelines()
 
 	D3D12::GraphicsPipelineBuilder gpb;
 	AddUtilityVertexAttributes(gpb);
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoDepthTestState();
 	gpb.SetRenderTarget(0, DXGI_FORMAT_R8G8B8A8_UNORM);
-	gpb.SetVertexShader(m_convert_vs.get());
+	gpb.SetVertexShader(m_convert_vs.Get());
 
 	for (int i = 0; i < static_cast<int>(m_merge.size()); i++)
 	{
@@ -2696,15 +2687,15 @@ bool GSDevice12::CompileMergePipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 		gpb.SetBlendState(0, true, D3D12_BLEND_SRC_ALPHA, D3D12_BLEND_INV_SRC_ALPHA, D3D12_BLEND_OP_ADD,
 			D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD);
 
-		m_merge[i] = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_merge[i] = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_merge[i])
 			return false;
 
-		D3D12::SetObjectName(m_merge[i].get(), TinyString::from_format("Merge pipeline {}", i));
+		D3D12::SetObjectName(m_merge[i].Get(), TinyString::from_format("Merge pipeline {}", i));
 	}
 
 	return true;
@@ -2714,12 +2705,12 @@ bool GSDevice12::CompilePostProcessingPipelines()
 {
 	D3D12::GraphicsPipelineBuilder gpb;
 	AddUtilityVertexAttributes(gpb);
-	gpb.SetRootSignature(m_utility_root_signature.get());
+	gpb.SetRootSignature(m_utility_root_signature.Get());
 	gpb.SetNoCullRasterizationState();
 	gpb.SetNoDepthTestState();
 	gpb.SetNoBlendingState();
 	gpb.SetRenderTarget(0, DXGI_FORMAT_R8G8B8A8_UNORM);
-	gpb.SetVertexShader(m_convert_vs.get());
+	gpb.SetVertexShader(m_convert_vs.Get());
 
 	{
 		const std::optional<std::string> shader = ReadShaderSource("shaders/common/fxaa.fx");
@@ -2735,13 +2726,13 @@ bool GSDevice12::CompilePostProcessingPipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 
-		m_fxaa_pipeline = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_fxaa_pipeline = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_fxaa_pipeline)
 			return false;
 
-		D3D12::SetObjectName(m_fxaa_pipeline.get(), "FXAA pipeline");
+		D3D12::SetObjectName(m_fxaa_pipeline.Get(), "FXAA pipeline");
 	}
 
 	{
@@ -2756,13 +2747,13 @@ bool GSDevice12::CompilePostProcessingPipelines()
 		if (!ps)
 			return false;
 
-		gpb.SetPixelShader(ps.get());
+		gpb.SetPixelShader(ps.Get());
 
-		m_shadeboost_pipeline = gpb.Create(m_device.get(), m_shader_cache, false);
+		m_shadeboost_pipeline = gpb.Create(m_device.Get(), m_shader_cache, false);
 		if (!m_shadeboost_pipeline)
 			return false;
 
-		D3D12::SetObjectName(m_shadeboost_pipeline.get(), "Shadeboost pipeline");
+		D3D12::SetObjectName(m_shadeboost_pipeline.Get(), "Shadeboost pipeline");
 	}
 
 	return true;
@@ -2770,11 +2761,11 @@ bool GSDevice12::CompilePostProcessingPipelines()
 
 void GSDevice12::DestroyResources()
 {
-	m_convert_vs.reset();
+	m_convert_vs.Reset();
 
-	m_cas_sharpen_pipeline.reset();
-	m_cas_upscale_pipeline.reset();
-	m_cas_root_signature.reset();
+	m_cas_sharpen_pipeline.Reset();
+	m_cas_upscale_pipeline.Reset();
+	m_cas_root_signature.Reset();
 
 	m_tfx_pipelines.clear();
 	m_tfx_pixel_shaders.clear();
@@ -2787,9 +2778,9 @@ void GSDevice12::DestroyResources()
 	m_colclip_setup_pipelines = {};
 	m_colclip_finish_pipelines = {};
 	m_date_image_setup_pipelines = {};
-	m_fxaa_pipeline.reset();
-	m_shadeboost_pipeline.reset();
-	m_imgui_pipeline.reset();
+	m_fxaa_pipeline.Reset();
+	m_shadeboost_pipeline.Reset();
+	m_imgui_pipeline.Reset();
 
 	for (const auto& it : m_samplers)
 	{
@@ -2799,16 +2790,16 @@ void GSDevice12::DestroyResources()
 	m_samplers.clear();
 	InvalidateSamplerGroups();
 
-	m_expand_index_buffer.reset();
-	m_expand_index_buffer_allocation.reset();
+	m_expand_index_buffer.Reset();
+	m_expand_index_buffer_allocation.Reset();
 	m_texture_stream_buffer.Destroy(false);
 	m_pixel_constant_buffer.Destroy(false);
 	m_vertex_constant_buffer.Destroy(false);
 	m_index_stream_buffer.Destroy(false);
 	m_vertex_stream_buffer.Destroy(false);
 
-	m_utility_root_signature.reset();
-	m_tfx_root_signature.reset();
+	m_utility_root_signature.Reset();
+	m_tfx_root_signature.Reset();
 
 	if (m_null_texture)
 	{
@@ -2819,8 +2810,8 @@ void GSDevice12::DestroyResources()
 	m_shader_cache.Close();
 
 	m_descriptor_heap_manager.Free(&m_null_srv_descriptor);
-	m_timestamp_query_buffer.reset();
-	m_timestamp_query_allocation.reset();
+	m_timestamp_query_buffer.Reset();
+	m_timestamp_query_allocation.Reset();
 	m_sampler_heap_manager.Destroy();
 	m_dsv_heap_manager.Destroy();
 	m_rtv_heap_manager.Destroy();
@@ -2835,16 +2826,16 @@ void GSDevice12::DestroyResources()
 		m_fence_event = {};
 	}
 
-	m_allocator.reset();
-	m_command_queue.reset();
-	m_device.reset();
+	m_allocator.Reset();
+	m_command_queue.Reset();
+	m_device.Reset();
 }
 
 const ID3DBlob* GSDevice12::GetTFXVertexShader(GSHWDrawConfig::VSSelector sel)
 {
 	auto it = m_tfx_vertex_shaders.find(sel.key);
 	if (it != m_tfx_vertex_shaders.end())
-		return it->second.get();
+		return it->second.Get();
 
 	ShaderMacro sm;
 	sm.AddMacro("VERTEX_SHADER", 1);
@@ -2856,14 +2847,14 @@ const ID3DBlob* GSDevice12::GetTFXVertexShader(GSHWDrawConfig::VSSelector sel)
 	const char* entry_point = (sel.expand != GSHWDrawConfig::VSExpand::None) ? "vs_main_expand" : "vs_main";
 	ComPtr<ID3DBlob> vs(m_shader_cache.GetVertexShader(m_tfx_source, sm.GetPtr(), entry_point));
 	it = m_tfx_vertex_shaders.emplace(sel.key, std::move(vs)).first;
-	return it->second.get();
+	return it->second.Get();
 }
 
 const ID3DBlob* GSDevice12::GetTFXPixelShader(const GSHWDrawConfig::PSSelector& sel)
 {
 	auto it = m_tfx_pixel_shaders.find(sel);
 	if (it != m_tfx_pixel_shaders.end())
-		return it->second.get();
+		return it->second.Get();
 
 	ShaderMacro sm;
 	sm.AddMacro("PIXEL_SHADER", 1);
@@ -2926,7 +2917,7 @@ const ID3DBlob* GSDevice12::GetTFXPixelShader(const GSHWDrawConfig::PSSelector& 
 
 	ComPtr<ID3DBlob> ps(m_shader_cache.GetPixelShader(m_tfx_source, sm.GetPtr(), "ps_main"));
 	it = m_tfx_pixel_shaders.emplace(sel, std::move(ps)).first;
-	return it->second.get();
+	return it->second.Get();
 }
 
 GSDevice12::ComPtr<ID3D12PipelineState> GSDevice12::CreateTFXPipeline(const PipelineSelector& p)
@@ -2953,7 +2944,7 @@ GSDevice12::ComPtr<ID3D12PipelineState> GSDevice12::CreateTFXPipeline(const Pipe
 
 	// Common state
 	D3D12::GraphicsPipelineBuilder gpb;
-	gpb.SetRootSignature(m_tfx_root_signature.get());
+	gpb.SetRootSignature(m_tfx_root_signature.Get());
 	gpb.SetPrimitiveTopologyType(topology_lookup[p.topology]);
 	gpb.SetRasterizationState(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false);
 	if (p.rt)
@@ -3034,11 +3025,11 @@ GSDevice12::ComPtr<ID3D12PipelineState> GSDevice12::CreateTFXPipeline(const Pipe
 			D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, p.cms.wrgba);
 	}
 
-	ComPtr<ID3D12PipelineState> pipeline(gpb.Create(m_device.get(), m_shader_cache));
+	ComPtr<ID3D12PipelineState> pipeline(gpb.Create(m_device.Get(), m_shader_cache));
 	if (pipeline)
 	{
 		D3D12::SetObjectName(
-			pipeline.get(), TinyString::from_format("TFX Pipeline {:08X}/{:08X}{:016X}", p.vs.key, p.ps.key_hi, p.ps.key_lo));
+			pipeline.Get(), TinyString::from_format("TFX Pipeline {:08X}/{:08X}{:016X}", p.vs.key, p.ps.key_hi, p.ps.key_lo));
 	}
 
 	return pipeline;
@@ -3048,11 +3039,11 @@ const ID3D12PipelineState* GSDevice12::GetTFXPipeline(const PipelineSelector& p)
 {
 	auto it = m_tfx_pipelines.find(p);
 	if (it != m_tfx_pipelines.end())
-		return it->second.get();
+		return it->second.Get();
 
 	ComPtr<ID3D12PipelineState> pipeline(CreateTFXPipeline(p));
 	it = m_tfx_pipelines.emplace(p, std::move(pipeline)).first;
-	return it->second.get();
+	return it->second.Get();
 }
 
 bool GSDevice12::BindDrawPipeline(const PipelineSelector& p)
@@ -3257,7 +3248,7 @@ void GSDevice12::SetUtilityRootSignature()
 
 	m_current_root_signature = RootSignature::Utility;
 	m_dirty_flags |= DIRTY_FLAG_TEXTURES_DESCRIPTOR_TABLE | DIRTY_FLAG_SAMPLERS_DESCRIPTOR_TABLE | DIRTY_FLAG_PIPELINE;
-	GetCommandList()->SetGraphicsRootSignature(m_utility_root_signature.get());
+	GetCommandList()->SetGraphicsRootSignature(m_utility_root_signature.Get());
 }
 
 void GSDevice12::SetUtilityTexture(GSTexture* dtex, const D3D12DescriptorHandle& sampler)
@@ -3349,12 +3340,12 @@ void GSDevice12::RenderTextureMipmap(
 	// Setup views. This will be a partial view for the SRV.
 	D3D12_RENDER_TARGET_VIEW_DESC rtv_desc = {texture->GetDXGIFormat(), D3D12_RTV_DIMENSION_TEXTURE2D};
 	rtv_desc.Texture2D = {dst_level, 0u};
-	m_device.get()->CreateRenderTargetView(texture->GetResource(), &rtv_desc, rtv_handle);
+	m_device.Get()->CreateRenderTargetView(texture->GetResource(), &rtv_desc, rtv_handle);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {
 		texture->GetDXGIFormat(), D3D12_SRV_DIMENSION_TEXTURE2D, D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING};
 	srv_desc.Texture2D = {src_level, 1u, 0u, 0.0f};
-	m_device.get()->CreateShaderResourceView(texture->GetResource(), &srv_desc, srv_handle);
+	m_device.Get()->CreateShaderResourceView(texture->GetResource(), &srv_desc, srv_handle);
 
 	// We need to set the descriptors up manually, because we're not going through GSTexture.
 	if (!GetTextureGroupDescriptors(&m_utility_texture_gpu, &srv_handle, 1))
@@ -3391,7 +3382,7 @@ void GSDevice12::RenderTextureMipmap(
 	cmdlist->RSSetScissorRects(1, &scissor);
 
 	SetUtilityRootSignature();
-	SetPipeline(m_convert[static_cast<int>(ShaderConvert::COPY)].get());
+	SetPipeline(m_convert[static_cast<int>(ShaderConvert::COPY)].Get());
 	DrawStretchRect(GSVector4(0.0f, 0.0f, 1.0f, 1.0f),
 		GSVector4(0.0f, 0.0f, static_cast<float>(dst_width), static_cast<float>(dst_height)),
 		GSVector2i(dst_width, dst_height));
@@ -3651,7 +3642,7 @@ bool GSDevice12::ApplyTFXState(bool already_execed)
 		flags |= DIRTY_FLAG_VS_CONSTANT_BUFFER_BINDING | DIRTY_FLAG_PS_CONSTANT_BUFFER_BINDING |
 		         DIRTY_FLAG_TEXTURES_DESCRIPTOR_TABLE | DIRTY_FLAG_SAMPLERS_DESCRIPTOR_TABLE |
 		         DIRTY_FLAG_TEXTURES_DESCRIPTOR_TABLE_2 | DIRTY_FLAG_PIPELINE;
-		cmdlist->SetGraphicsRootSignature(m_tfx_root_signature.get());
+		cmdlist->SetGraphicsRootSignature(m_tfx_root_signature.Get());
 	}
 
 	if (flags & DIRTY_FLAG_VS_CONSTANT_BUFFER_BINDING)
@@ -3688,7 +3679,7 @@ bool GSDevice12::ApplyUtilityState(bool already_execed)
 	{
 		m_current_root_signature = RootSignature::Utility;
 		flags |= DIRTY_FLAG_TEXTURES_DESCRIPTOR_TABLE | DIRTY_FLAG_SAMPLERS_DESCRIPTOR_TABLE | DIRTY_FLAG_PIPELINE;
-		cmdlist->SetGraphicsRootSignature(m_utility_root_signature.get());
+		cmdlist->SetGraphicsRootSignature(m_utility_root_signature.Get());
 	}
 
 	if (flags & DIRTY_FLAG_TEXTURES_DESCRIPTOR_TABLE)
@@ -3732,7 +3723,7 @@ void GSDevice12::SetupDATE(GSTexture* rt, GSTexture* ds, SetDATM datm, const GSV
 	OMSetRenderTargets(nullptr, ds, bbox);
 	IASetVertexBuffer(vertices, sizeof(vertices[0]), 4);
 	SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	SetPipeline(m_convert[SetDATMShader(datm)].get());
+	SetPipeline(m_convert[SetDATMShader(datm)].Get());
 	SetStencilRef(1);
 	BeginRenderPass(D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS,
 		D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE, D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
@@ -3785,7 +3776,7 @@ GSTexture12* GSDevice12::SetupPrimitiveTrackingDATE(GSHWDrawConfig& config, Pipe
 	};
 	SetUtilityRootSignature();
 	SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	SetPipeline(m_date_image_setup_pipelines[pipe.ds][static_cast<u8>(config.datm)].get());
+	SetPipeline(m_date_image_setup_pipelines[pipe.ds][static_cast<u8>(config.datm)].Get());
 	IASetVertexBuffer(vertices, sizeof(vertices[0]), std::size(vertices));
 	if (ApplyUtilityState())
 		DrawPrimitive();
@@ -3888,7 +3879,7 @@ void GSDevice12::RenderHW(GSHWDrawConfig& config)
 				draw_rt->GetUNormClearColor(), 0.0f, 0);
 
 			const GSVector4 sRect(GSVector4(config.colclip_update_area) / GSVector4(rtsize.x, rtsize.y).xyxy());
-			SetPipeline(m_colclip_finish_pipelines[pipe.ds].get());
+			SetPipeline(m_colclip_finish_pipelines[pipe.ds].Get());
 			SetUtilityTexture(colclip_rt, m_point_sampler_cpu);
 			DrawStretchRect(sRect, GSVector4(config.colclip_update_area), rtsize);
 			g_perfmon.Put(GSPerfMon::TextureCopies, 1);
@@ -4060,7 +4051,7 @@ void GSDevice12::RenderHW(GSHWDrawConfig& config)
 	{
 		OMSetRenderTargets(draw_rt, draw_ds, GSVector4i::loadh(rtsize));
 		SetUtilityTexture(static_cast<GSTexture12*>(config.rt), m_point_sampler_cpu);
-		SetPipeline(m_colclip_setup_pipelines[pipe.ds].get());
+		SetPipeline(m_colclip_setup_pipelines[pipe.ds].Get());
 
 		const GSVector4 drawareaf = GSVector4((config.colclip_mode == GSHWDrawConfig::ColClipMode::ConvertOnly) ? GSVector4i::loadh(rtsize) : config.drawarea);
 		const GSVector4 sRect(drawareaf / GSVector4(rtsize.x, rtsize.y).xyxy());
@@ -4140,7 +4131,7 @@ void GSDevice12::RenderHW(GSHWDrawConfig& config)
 				draw_rt->GetUNormClearColor(), 0.0f, 0);
 
 			const GSVector4 sRect(GSVector4(config.colclip_update_area) / GSVector4(rtsize.x, rtsize.y).xyxy());
-			SetPipeline(m_colclip_finish_pipelines[pipe.ds].get());
+			SetPipeline(m_colclip_finish_pipelines[pipe.ds].Get());
 			SetUtilityTexture(colclip_rt, m_point_sampler_cpu);
 			DrawStretchRect(sRect, GSVector4(config.colclip_update_area), rtsize);
 			g_perfmon.Put(GSPerfMon::TextureCopies, 1);

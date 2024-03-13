@@ -67,6 +67,8 @@
 
 #ifdef _WIN32
 #include "common/RedtapeWindows.h"
+#include <Windows.h>
+#include <wrl/client.h>
 #include <objbase.h>
 #include <timeapi.h>
 #include <powrprof.h>
@@ -2432,12 +2434,12 @@ void LogGPUCapabilities()
 {
 	Console.WriteLn(Color_StrongBlack, "Graphics Adapters Detected:");
 #if defined(_WIN32)
-	IDXGIFactory1* pFactory = nullptr;
-	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory)))
+	Microsoft::WRL::ComPtr<IDXGIFactory1> pFactory;
+	if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&pFactory))))
 		return;
 
 	UINT i = 0;
-	IDXGIAdapter* pAdapter = nullptr;
+	Microsoft::WRL::ComPtr<IDXGIAdapter> pAdapter;
 	while (pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC desc;
@@ -2454,21 +2456,12 @@ void LogGPUCapabilities()
 				umdver.QuadPart & 0xFFFF);
 
 			i++;
-			pAdapter->Release();
-			pAdapter = nullptr;
 		}
 		else
 		{
-			pAdapter->Release();
-			pAdapter = nullptr;
-
 			break;
 		}
 	}
-
-	if (pAdapter)
-		pAdapter->Release();
-	pFactory->Release();
 #else
 	// Credits to neofetch for the following (modified) script
 	std::string gpu_script = R"gpu_script(

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <wil/resource.h>
+#include <wrl/client.h>
 
 class DInputSource final : public InputSource
 {
@@ -55,7 +56,7 @@ public:
 private:
 	struct ControllerData
 	{
-		wil::com_ptr_nothrow<IDirectInputDevice8W> device;
+		Microsoft::WRL::ComPtr<IDirectInputDevice8W> device;
 		DIJOYSTATE2 last_state = {};
 		GUID guid = {};
 		std::vector<u32> axis_offsets;
@@ -78,7 +79,7 @@ private:
 
 	// Those must go first in the class so they are destroyed last
 	wil::unique_hmodule m_dinput_module;
-	wil::com_ptr_nothrow<IDirectInput8W> m_dinput;
+	Microsoft::WRL::ComPtr<IDirectInput8W> m_dinput;
 	HWND m_toplevel_window = nullptr;
 
 	ControllerDataArray m_controllers;

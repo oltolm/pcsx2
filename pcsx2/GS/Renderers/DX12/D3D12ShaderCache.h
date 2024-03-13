@@ -13,12 +13,13 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <wrl/client.h>
 
 class D3D12ShaderCache
 {
 public:
 	template <typename T>
-	using ComPtr = wil::com_ptr_nothrow<T>;
+	using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 	enum class EntryType
 	{

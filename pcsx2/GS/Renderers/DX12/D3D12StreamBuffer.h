@@ -10,6 +10,7 @@
 #include <d3d12.h>
 #include <deque>
 #include <utility>
+#include <wrl/client.h>
 
 namespace D3D12MA
 {
@@ -25,7 +26,7 @@ public:
 	bool Create(u32 size);
 
 	__fi bool IsValid() const { return static_cast<bool>(m_buffer); }
-	__fi ID3D12Resource* GetBuffer() const { return m_buffer.get(); }
+	__fi ID3D12Resource* GetBuffer() const { return m_buffer.Get(); }
 	__fi D3D12_GPU_VIRTUAL_ADDRESS GetGPUPointer() const { return m_gpu_pointer; }
 	__fi void* GetHostPointer() const { return m_host_pointer; }
 	__fi void* GetCurrentHostPointer() const { return m_host_pointer + m_current_offset; }
@@ -51,8 +52,8 @@ private:
 	u32 m_current_space = 0;
 	u32 m_current_gpu_position = 0;
 
-	wil::com_ptr_nothrow<ID3D12Resource> m_buffer;
-	wil::com_ptr_nothrow<D3D12MA::Allocation> m_allocation;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;
+	Microsoft::WRL::ComPtr<D3D12MA::Allocation> m_allocation;
 	D3D12_GPU_VIRTUAL_ADDRESS m_gpu_pointer = {};
 	u8* m_host_pointer = nullptr;
 

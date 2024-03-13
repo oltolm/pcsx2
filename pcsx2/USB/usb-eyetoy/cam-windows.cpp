@@ -3,6 +3,7 @@
 
 #include "common/Console.h"
 #include "common/Error.h"
+#include "common/ScopedGuard.h"
 #include "common/StringUtil.h"
 
 #include "videodev.h"
@@ -13,14 +14,13 @@
 #include "USB/USB.h"
 
 #include <jpeglib.h>
+#include <wingdi.h>
+#include <wrl/client.h>
 
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmicrosoft-goto"
 #endif
-
-#define safe_release(ptr) \
-	((void)((((ptr) != NULL) && ((ptr)->Release(), !!0)), (ptr) = NULL))
 
 namespace usb_eyetoy
 {
@@ -60,7 +60,7 @@ namespace usb_eyetoy
 		{
 			std::vector<std::pair<std::string, std::string>> devList;
 
-			ICreateDevEnum* pCreateDevEnum = nullptr;
+			Microsoft::WRL::ComPtr<ICreateDevEnum> pCreateDevEnum;
 			HRESULT hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pCreateDevEnum));
 			if (FAILED(hr))
 			{
@@ -68,7 +68,7 @@ namespace usb_eyetoy
 				return devList;
 			}
 
-			IEnumMoniker* pEnum = nullptr;
+			Microsoft::WRL::ComPtr<IEnumMoniker> pEnum;
 			hr = pCreateDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0);
 			if (hr != S_OK)
 			{
@@ -76,15 +76,14 @@ namespace usb_eyetoy
 				return devList;
 			};
 
-			IMoniker* pMoniker = nullptr;
+			Microsoft::WRL::ComPtr<IMoniker> pMoniker;
 			while (pEnum->Next(1, &pMoniker, NULL) == S_OK)
 			{
-				IPropertyBag* pPropBag = nullptr;
+				Microsoft::WRL::ComPtr<IPropertyBag> pPropBag;
 				hr = pMoniker->BindToStorage(0, 0, IID_PPV_ARGS(&pPropBag));
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: BindToStorage err : %x", hr);
-					pMoniker->Release();
 					continue;
 				}
 
@@ -101,14 +100,9 @@ namespace usb_eyetoy
 					devList.emplace_back(u8name, u8name);
 					VariantClear(&var);
 				}
-
-				pPropBag->Release();
-				pMoniker->Release();
 			}
 
-			pEnum->Release();
 			CoUninitialize();
-
 			return devList;
 		}
 
@@ -131,14 +125,14 @@ namespace usb_eyetoy
 				return -1;
 			}
 
-			hr = pGraphBuilder->SetFiltergraph(pGraph);
+			hr = pGraphBuilder->SetFiltergraph(pGraph.Get());
 			if (FAILED(hr))
 			{
 				Console.Warning("Camera: SetFiltergraph err : %x", hr);
 				return -1;
 			}
 
-			hr = pGraph->QueryInterface(IID_IMediaControl, (void**)&pControl);
+			hr = pGraph.As(&pControl);
 			if (FAILED(hr))
 			{
 				Console.Warning("Camera: QueryInterface IID_IMediaControl err : %x", hr);
@@ -146,7 +140,7 @@ namespace usb_eyetoy
 			}
 
 			// enumerate all video capture devices
-			ICreateDevEnum* pCreateDevEnum = nullptr;
+			Microsoft::WRL::ComPtr<ICreateDevEnum> pCreateDevEnum;
 			hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pCreateDevEnum));
 			if (FAILED(hr))
 			{
@@ -154,7 +148,7 @@ namespace usb_eyetoy
 				return -1;
 			}
 
-			IEnumMoniker* pEnum = nullptr;
+			Microsoft::WRL::ComPtr<IEnumMoniker> pEnum;
 			hr = pCreateDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnum, 0);
 			if (hr != S_OK)
 			{
@@ -162,23 +156,20 @@ namespace usb_eyetoy
 				return -1;
 			};
 
-			pEnum->Reset();
-
-			IMoniker* pMoniker = nullptr;
+			Microsoft::WRL::ComPtr<IMoniker> pMoniker;
 			while (pEnum->Next(1, &pMoniker, NULL) == S_OK && sourcefilter == nullptr)
 			{
 				LONGLONG start = 0, stop = MAXLONGLONG;
 
-				IPropertyBag* pPropBag = nullptr;
+				Microsoft::WRL::ComPtr<IPropertyBag> pPropBag;
 				hr = pMoniker->BindToStorage(0, 0, IID_PPV_ARGS(&pPropBag));
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: BindToStorage err : %x", hr);
-					goto freeMoniker;
+					break;
 				}
 
-				VARIANT var;
-				VariantInit(&var);
+				wil::unique_variant var;
 				hr = pPropBag->Read(L"Description", &var, 0);
 				if (FAILED(hr))
 				{
@@ -187,24 +178,24 @@ namespace usb_eyetoy
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: Read name err : %x", hr);
-					goto freeVar;
+					break;
 				}
 				Console.Warning("Camera: '%ls'", var.bstrVal);
 				if (!selectedDevice.empty() && selectedDevice != var.bstrVal)
 				{
-					goto freeVar;
+					break;
 				}
 
 				//add a filter for the device
-				hr = pGraph->AddSourceFilterForMoniker(pMoniker, NULL, L"sourcefilter", &sourcefilter);
+				hr = pGraph->AddSourceFilterForMoniker(pMoniker.Get(), NULL, L"sourcefilter", &sourcefilter);
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: AddSourceFilterForMoniker err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				hr = pGraphBuilder->FindInterface(
-					&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, sourcefilter, IID_IAMStreamConfig, (void**)&pSourceConfig);
+					&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, sourcefilter.Get(), IID_PPV_ARGS(&pSourceConfig));
 				if (SUCCEEDED(hr))
 				{
 					int iCount = 0, iSize = 0;
@@ -230,14 +221,13 @@ namespace usb_eyetoy
 									VIDEOINFOHEADER* pVih = (VIDEOINFOHEADER*)pmtConfig->pbFormat;
 									pVih->bmiHeader.biWidth = frame_width;
 									pVih->bmiHeader.biHeight = frame_height;
-									pVih->bmiHeader.biSizeImage = DIBSIZE(pVih->bmiHeader);
+									pVih->bmiHeader.biSizeImage = GDI_DIBSIZE(pVih->bmiHeader);
 									hr = pSourceConfig->SetFormat(pmtConfig);
 									if (FAILED(hr))
 									{
 										Console.Warning("Camera: SetFormat err : %x", hr);
 									}
 								}
-								//DeleteMediaType(pmtConfig);
 							}
 						}
 					}
@@ -248,22 +238,22 @@ namespace usb_eyetoy
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: CoCreateInstance CLSID_SampleGrabber err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
-				hr = pGraph->AddFilter(samplegrabberfilter, L"samplegrabberfilter");
+				hr = pGraph->AddFilter(samplegrabberfilter.Get(), L"samplegrabberfilter");
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: AddFilter samplegrabberfilter err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				//set mediatype on the samplegrabber
-				hr = samplegrabberfilter->QueryInterface(IID_PPV_ARGS(&samplegrabber));
+				hr = samplegrabberfilter.As(&samplegrabber);
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: QueryInterface err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				AM_MEDIA_TYPE mt;
@@ -274,7 +264,7 @@ namespace usb_eyetoy
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: SetMediaType err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				//add the callback to the samplegrabber
@@ -282,7 +272,7 @@ namespace usb_eyetoy
 				if (hr != S_OK)
 				{
 					Console.Warning("Camera: SetCallback err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				//set the null renderer
@@ -290,40 +280,32 @@ namespace usb_eyetoy
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: CoCreateInstance CLSID_NullRenderer err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
-				hr = pGraph->AddFilter(nullrenderer, L"nullrenderer");
+				hr = pGraph->AddFilter(nullrenderer.Get(), L"nullrenderer");
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: AddFilter nullrenderer err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				//set the render path
-				hr = pGraphBuilder->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, sourcefilter, samplegrabberfilter, nullrenderer);
+				hr = pGraphBuilder->RenderStream(&PIN_CATEGORY_PREVIEW, &MEDIATYPE_Video, sourcefilter.Get(), samplegrabberfilter.Get(), nullrenderer.Get());
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: RenderStream err : %x", hr);
-					goto freeVar;
+					break;
 				}
 
 				// if the stream is started, start capturing immediatly
-				hr = pGraphBuilder->ControlStream(&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, sourcefilter, &start, &stop, 1, 2);
+				hr = pGraphBuilder->ControlStream(&PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, sourcefilter.Get(), &start, &stop, 1, 2);
 				if (FAILED(hr))
 				{
 					Console.Warning("Camera: ControlStream err : %x", hr);
-					goto freeVar;
+					break;
 				}
-
-			freeVar:
-				VariantClear(&var);
-				pPropBag->Release();
-
-			freeMoniker:
-				pMoniker->Release();
 			}
-			pEnum->Release();
 			if (sourcefilter == nullptr)
 			{
 				return -1;
@@ -507,14 +489,6 @@ namespace usb_eyetoy
 
 		DirectShow::DirectShow()
 		{
-			pGraphBuilder = nullptr;
-			pGraph = nullptr;
-			pControl = nullptr;
-			sourcefilter = nullptr;
-			samplegrabberfilter = nullptr;
-			nullrenderer = nullptr;
-			pSourceConfig = nullptr;
-			samplegrabber = nullptr;
 			callbackhandler = new CallbackHandler();
 			mpeg_buffer.start = calloc(1, 640 * 480 * 2);
 		}
@@ -576,17 +550,17 @@ namespace usb_eyetoy
 				this->Stop();
 				pControl->Stop();
 
-				safe_release(sourcefilter);
-				safe_release(pSourceConfig);
-				safe_release(samplegrabberfilter);
-				safe_release(samplegrabber);
-				safe_release(nullrenderer);
+				sourcefilter.Reset();
+				pSourceConfig.Reset();
+				samplegrabberfilter.Reset();
+				samplegrabber.Reset();
+				nullrenderer.Reset();
 			}
 
-			safe_release(pGraphBuilder);
-			safe_release(pGraph);
-			safe_release(pControl);
 			dshowCoInitialize.reset();
+			pGraphBuilder.Reset();
+			pGraph.Reset();
+			pControl.Reset();
 			return 0;
 		};
 

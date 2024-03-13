@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2002-2025 PCSX2 Dev Team
 // SPDX-License-Identifier: GPL-3.0+
 
+#include <tchar.h>
 #include "common/RedtapeWindows.h"
 #include "common/RedtapeWilCom.h"
 #include "common/StringUtil.h"
@@ -15,13 +16,13 @@
 #include <Netcfgx.h>
 #include <devguid.h>
 
-#include <tchar.h>
 #include "tap.h"
 #include "DEV9/DEV9.h"
 #include <string>
 
 #include <wil/com.h>
 #include <wil/resource.h>
+#include <wrl/client.h>
 
 #include "DEV9/PacketReader/MAC_Address.h"
 #include "DEV9/AdapterUtils.h"
@@ -98,25 +99,25 @@ bool IsTAPDevice(const TCHAR* guid)
 		}
 		else
 		{
-			len = sizeof(component_id);
+		len = sizeof(component_id);
 			status = RegQueryValueEx(unit_key.get(), component_id_string, nullptr, &data_type,
-				(LPBYTE)component_id, &len);
+			(LPBYTE)component_id, &len);
 
-			if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
-			{
-				len = sizeof(net_cfg_instance_id);
+		if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
+		{
+			len = sizeof(net_cfg_instance_id);
 				status = RegQueryValueEx(unit_key.get(), net_cfg_instance_id_string, nullptr, &data_type,
-					(LPBYTE)net_cfg_instance_id, &len);
+				(LPBYTE)net_cfg_instance_id, &len);
 
-				if (status == ERROR_SUCCESS && data_type == REG_SZ)
+			if (status == ERROR_SUCCESS && data_type == REG_SZ)
+			{
+				// tap_ovpnconnect, tap0901 or root\tap, no clue why
+				if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
 				{
-					// tap_ovpnconnect, tap0901 or root\tap, no clue why
-					if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
-					{
-						return true;
-					}
+					return true;
 				}
 			}
+		}
 		}
 		++i;
 	}
@@ -382,21 +383,23 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 	PIP_ADAPTER_ADDRESSES bridgeAdapter = nullptr;
 
 	//Create Instance of INetCfg
-	if (auto netcfg = wil::CoCreateInstanceNoThrow<INetCfg>(CLSID_CNetCfg))
+	Microsoft::WRL::ComPtr<INetCfg> netcfg;
+	auto hr = CoCreateInstance(__uuidof(CNetCfg), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&netcfg));
+	if (SUCCEEDED(hr))
 	{
 		HRESULT hr = netcfg->Initialize(nullptr);
 		if (SUCCEEDED(hr))
 		{
 			//Get the bridge component
 			//The bridged adapter should have this bound
-			wil::com_ptr_nothrow<INetCfgComponent> bridge;
-			hr = netcfg->FindComponent(L"ms_bridge", bridge.put());
+			Microsoft::WRL::ComPtr<INetCfgComponent> bridge;
+			hr = netcfg->FindComponent(L"ms_bridge", &bridge);
 
 			if (SUCCEEDED(hr))
 			{
 				//Get a List of network adapters via INetCfg
-				wil::com_ptr_nothrow<IEnumNetCfgComponent> components;
-				hr = netcfg->EnumComponents(&GUID_DEVCLASS_NET, components.put());
+				Microsoft::WRL::ComPtr<IEnumNetCfgComponent> components;
+				hr = netcfg->EnumComponents(&GUID_DEVCLASS_NET, &components);
 				if (SUCCEEDED(hr))
 				{
 					//Search possible bridge adapters
@@ -419,10 +422,10 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 							continue;
 
 						//Loop through components
-						wil::com_ptr_nothrow<INetCfgComponent> component;
+						Microsoft::WRL::ComPtr<INetCfgComponent> component;
 						while (true)
 						{
-							if (components->Next(1, component.put(), nullptr) != S_OK)
+							if (FAILED(components->Next(1, &component, nullptr)))
 								break;
 
 							GUID comInstGuid;
@@ -445,11 +448,11 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 										Console.WriteLn(fmt::format("DEV9: {} is possible bridge (Check 2 passed)", StringUtil::WideStringToUTF8String(dispName.get())));
 
 									//Check if adapter has the ms_bridge component bound to it.
-									auto bindings = bridge.try_query<INetCfgComponentBindings>();
-									if (!bindings)
+									Microsoft::WRL::ComPtr<INetCfgComponentBindings> bindings;
+									if (FAILED(bridge.As(&bindings)))
 										continue;
 
-									hr = bindings->IsBoundTo(component.get());
+									hr = bindings->IsBoundTo(component.Get());
 									if (hr != S_OK)
 										continue;
 
@@ -462,7 +465,6 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 								}
 							}
 						}
-						components->Reset();
 						if (bridgeAdapter != nullptr)
 							break;
 					}
@@ -578,11 +580,11 @@ bool TAPAdapter::send(NetPacket* pkt)
 	if (NetAdapter::send(pkt))
 		return true;
 
-	DWORD writen;
+	DWORD written;
 	BOOL result = WriteFile(htap,
 		pkt->buffer,
 		pkt->size,
-		&writen,
+		&written,
 		&write);
 
 	if (!result)
@@ -591,13 +593,13 @@ bool TAPAdapter::send(NetPacket* pkt)
 		if (dwError == ERROR_IO_PENDING)
 		{
 			WaitForSingleObject(write.hEvent, INFINITE);
-			result = GetOverlappedResult(htap, &write, &writen, FALSE);
+			result = GetOverlappedResult(htap, &write, &written, FALSE);
 		}
 	}
 
 	if (result)
 	{
-		if (writen != pkt->size)
+		if (written != pkt->size)
 			return false;
 
 		return true;

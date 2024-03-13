@@ -10,6 +10,7 @@
 #include "common/RedtapeWilCom.h"
 
 #include <limits>
+#include <wrl/client.h>
 
 namespace D3D12MA
 {
@@ -24,7 +25,7 @@ public:
 	static std::unique_ptr<GSTexture12> Create(Type type, Format format, int width, int height, int levels,
 		DXGI_FORMAT dxgi_format, DXGI_FORMAT srv_format, DXGI_FORMAT rtv_format, DXGI_FORMAT dsv_format,
 		DXGI_FORMAT uav_format);
-	static std::unique_ptr<GSTexture12> Adopt(wil::com_ptr_nothrow<ID3D12Resource> resource, Type type, Format format,
+	static std::unique_ptr<GSTexture12> Adopt(Microsoft::WRL::ComPtr<ID3D12Resource> resource, Type type, Format format,
 		int width, int height, int levels, DXGI_FORMAT dxgi_format, DXGI_FORMAT srv_format, DXGI_FORMAT rtv_format,
 		DXGI_FORMAT dsv_format, DXGI_FORMAT uav_format, D3D12_RESOURCE_STATES resource_state);
 
@@ -34,8 +35,8 @@ public:
 	__fi const D3D12DescriptorHandle& GetFBLDescriptor() const { return m_fbl_descriptor; }
 	__fi D3D12_RESOURCE_STATES GetResourceState() const { return m_resource_state; }
 	__fi DXGI_FORMAT GetDXGIFormat() const { return m_dxgi_format; }
-	__fi ID3D12Resource* GetResource() const { return m_resource.get(); }
-	__fi ID3D12Resource* GetFBLResource() const { return m_resource_fbl.get(); }
+	__fi ID3D12Resource* GetResource() const { return m_resource.Get(); }
+	__fi ID3D12Resource* GetFBLResource() const { return m_resource_fbl.Get(); }
 
 	void* GetNativeHandle() const override;
 
@@ -70,8 +71,8 @@ private:
 	};
 
 	GSTexture12(Type type, Format format, int width, int height, int levels, DXGI_FORMAT dxgi_format,
-		wil::com_ptr_nothrow<ID3D12Resource> resource, wil::com_ptr_nothrow<ID3D12Resource> resource_fbl,
-		wil::com_ptr_nothrow<D3D12MA::Allocation> allocation, const D3D12DescriptorHandle& srv_descriptor,
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource, Microsoft::WRL::ComPtr<ID3D12Resource> resource_fbl,
+		Microsoft::WRL::ComPtr<D3D12MA::Allocation> allocation, const D3D12DescriptorHandle& srv_descriptor,
 		const D3D12DescriptorHandle& write_descriptor, const D3D12DescriptorHandle& uav_descriptor,
 		const D3D12DescriptorHandle& fbl_descriptor, WriteDescriptorType wdtype, D3D12_RESOURCE_STATES resource_state);
 
@@ -85,9 +86,9 @@ private:
 	ID3D12Resource* AllocateUploadStagingBuffer(const void* data, u32 pitch, u32 upload_pitch, u32 height) const;
 	void CopyTextureDataForUpload(void* dst, const void* src, u32 pitch, u32 upload_pitch, u32 height) const;
 
-	wil::com_ptr_nothrow<ID3D12Resource> m_resource;
-	wil::com_ptr_nothrow<ID3D12Resource> m_resource_fbl;
-	wil::com_ptr_nothrow<D3D12MA::Allocation> m_allocation;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_resource;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_resource_fbl;
+	Microsoft::WRL::ComPtr<D3D12MA::Allocation> m_allocation;
 
 	D3D12DescriptorHandle m_srv_descriptor = {};
 	D3D12DescriptorHandle m_write_descriptor = {};
@@ -128,8 +129,8 @@ public:
 private:
 	GSDownloadTexture12(u32 width, u32 height, GSTexture::Format format);
 
-	wil::com_ptr_nothrow<D3D12MA::Allocation> m_allocation;
-	wil::com_ptr_nothrow<ID3D12Resource> m_buffer;
+	Microsoft::WRL::ComPtr<D3D12MA::Allocation> m_allocation;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;
 
 	u64 m_copy_fence_value = 0;
 	u32 m_buffer_size = 0;

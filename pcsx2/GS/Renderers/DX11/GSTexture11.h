@@ -9,19 +9,20 @@
 #include "common/RedtapeWilCom.h"
 #include <d3d11.h>
 #include <memory>
+#include <wrl/client.h>
 
 class GSTexture11 final : public GSTexture
 {
-	wil::com_ptr_nothrow<ID3D11Texture2D> m_texture;
-	wil::com_ptr_nothrow<ID3D11ShaderResourceView> m_srv;
-	wil::com_ptr_nothrow<ID3D11RenderTargetView> m_rtv;
-	wil::com_ptr_nothrow<ID3D11DepthStencilView> m_dsv;
-	wil::com_ptr_nothrow<ID3D11UnorderedAccessView> m_uav;
-	wil::com_ptr_nothrow<ID3D11DepthStencilView> m_read_only_dsv;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> m_texture;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_srv;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_rtv;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_dsv;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_uav;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_read_only_dsv;
 	D3D11_TEXTURE2D_DESC m_desc;
 
 public:
-	explicit GSTexture11(wil::com_ptr_nothrow<ID3D11Texture2D> texture, const D3D11_TEXTURE2D_DESC& desc,
+	explicit GSTexture11(Microsoft::WRL::ComPtr<ID3D11Texture2D> texture, const D3D11_TEXTURE2D_DESC& desc,
 		GSTexture::Type type, GSTexture::Format format);
 
 	static DXGI_FORMAT GetDXGIFormat(Format format);
@@ -66,7 +67,7 @@ public:
 #endif
 
 private:
-	GSDownloadTexture11(wil::com_ptr_nothrow<ID3D11Texture2D> tex, u32 width, u32 height, GSTexture::Format format);
+	GSDownloadTexture11(Microsoft::WRL::ComPtr<ID3D11Texture2D> tex, u32 width, u32 height, GSTexture::Format format);
 
-	wil::com_ptr_nothrow<ID3D11Texture2D> m_texture;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> m_texture;
 };

@@ -25,7 +25,7 @@ class GSDevice12 final : public GSDevice
 {
 public:
 	template <typename T>
-	using ComPtr = wil::com_ptr_nothrow<T>;
+	using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 	enum : u32
 	{
@@ -42,10 +42,10 @@ public:
 		NUM_TIMESTAMP_QUERIES_PER_CMDLIST = 2,
 	};
 
-	__fi IDXGIAdapter1* GetAdapter() const { return m_adapter.get(); }
-	__fi ID3D12Device* GetDevice() const { return m_device.get(); }
-	__fi ID3D12CommandQueue* GetCommandQueue() const { return m_command_queue.get(); }
-	__fi D3D12MA::Allocator* GetAllocator() const { return m_allocator.get(); }
+	__fi IDXGIAdapter1* GetAdapter() const { return m_adapter.Get(); }
+	__fi ID3D12Device* GetDevice() const { return m_device.Get(); }
+	__fi ID3D12CommandQueue* GetCommandQueue() const { return m_command_queue.Get(); }
+	__fi D3D12MA::Allocator* GetAllocator() const { return m_allocator.Get(); }
 
 	/// Returns the PCI vendor ID of the device, if known.
 	u32 GetAdapterVendorID() const;
@@ -53,7 +53,7 @@ public:
 	/// Returns the current command list, commands can be recorded directly.
 	ID3D12GraphicsCommandList4* GetCommandList() const
 	{
-		return m_command_lists[m_current_command_list].command_lists[1].get();
+		return m_command_lists[m_current_command_list].command_lists[1].Get();
 	}
 
 	/// Returns the init command list for uploading.
@@ -137,7 +137,7 @@ private:
 		std::array<ComPtr<ID3D12GraphicsCommandList4>, 2> command_lists;
 		D3D12DescriptorAllocator descriptor_allocator;
 		D3D12GroupedSamplerAllocator<SAMPLER_GROUP_SIZE> sampler_allocator;
-		std::vector<std::pair<D3D12MA::Allocation*, ID3D12DeviceChild*>> pending_resources;
+		std::vector<std::pair<ComPtr<D3D12MA::Allocation>, ComPtr<ID3D12DeviceChild>>> pending_resources;
 		std::vector<std::pair<D3D12DescriptorHeapManager&, u32>> pending_descriptors;
 		u64 ready_fence_value = 0;
 		bool init_command_list_used = false;

@@ -75,7 +75,7 @@ bool DInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex
 	}
 
 	HRESULT hr =
-		create(GetModuleHandleA(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8W, reinterpret_cast<LPVOID*>(m_dinput.put()), nullptr);
+		create(GetModuleHandleA(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8W, &m_dinput, nullptr);
 	if (FAILED(hr))
 	{
 		Console.Error("DirectInput8Create() failed: %08X", hr);
@@ -132,7 +132,7 @@ bool DInputSource::ReloadDevices()
 
 		ControllerData cd;
 		cd.guid = inst.guidInstance;
-		HRESULT hr = m_dinput->CreateDevice(inst.guidInstance, cd.device.put(), nullptr);
+		HRESULT hr = m_dinput->CreateDevice(inst.guidInstance, &cd.device, nullptr);
 		if (FAILED(hr))
 		{
 			Console.Warning("Failed to create instance of device [%s, %s]", inst.tszProductName, inst.tszInstanceName);
@@ -163,8 +163,8 @@ void DInputSource::Shutdown()
 	}
 
 	m_toplevel_window = nullptr;
-	m_dinput.reset();
 	m_dinput_module.reset();
+	m_dinput.Reset();
 }
 
 bool DInputSource::IsInitialized()

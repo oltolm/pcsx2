@@ -14,11 +14,12 @@
 #include <wil/com.h>
 #include <dxgi1_5.h>
 #include <d3d11_1.h>
+#include <wrl/client.h>
 
 struct GSVertexShader11
 {
-	wil::com_ptr_nothrow<ID3D11VertexShader> vs;
-	wil::com_ptr_nothrow<ID3D11InputLayout> il;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
 };
 
 class GSDevice11 final : public GSDevice
@@ -113,19 +114,19 @@ private:
 	bool CreateImGuiResources();
 	void RenderImGui();
 
-	wil::com_ptr_nothrow<IDXGIFactory5> m_dxgi_factory;
-	wil::com_ptr_nothrow<ID3D11Device1> m_dev;
-	wil::com_ptr_nothrow<ID3D11DeviceContext1> m_ctx;
-	wil::com_ptr_nothrow<ID3DUserDefinedAnnotation> m_annotation;
+	Microsoft::WRL::ComPtr<IDXGIFactory5> m_dxgi_factory;
+	Microsoft::WRL::ComPtr<ID3D11Device1> m_dev;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext1> m_ctx;
+	Microsoft::WRL::ComPtr<ID3DUserDefinedAnnotation> m_annotation;
 
-	wil::com_ptr_nothrow<IDXGISwapChain1> m_swap_chain;
-	wil::com_ptr_nothrow<ID3D11RenderTargetView> m_swap_chain_rtv;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swap_chain;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_swap_chain_rtv;
 
-	wil::com_ptr_nothrow<ID3D11Buffer> m_vb;
-	wil::com_ptr_nothrow<ID3D11Buffer> m_ib;
-	wil::com_ptr_nothrow<ID3D11Buffer> m_expand_vb;
-	wil::com_ptr_nothrow<ID3D11Buffer> m_expand_ib;
-	wil::com_ptr_nothrow<ID3D11ShaderResourceView> m_expand_vb_srv;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_vb;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ib;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_expand_vb;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_expand_ib;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_expand_vb_srv;
 
 	D3D_FEATURE_LEVEL m_feature_level = D3D_FEATURE_LEVEL_10_0;
 	u32 m_vb_pos = 0; // bytes
@@ -140,30 +141,30 @@ private:
 	struct
 	{
 		D3D11_PRIMITIVE_TOPOLOGY topology;
-		ID3D11InputLayout* layout;
-		ID3D11Buffer* index_buffer;
-		ID3D11VertexShader* vs;
-		ID3D11Buffer* vs_cb;
 		std::array<ID3D11ShaderResourceView*, MAX_TEXTURES> ps_sr_views;
 		std::array<ID3D11ShaderResourceView*, MAX_TEXTURES> ps_cached_sr_views;
-		ID3D11PixelShader* ps;
-		ID3D11Buffer* ps_cb;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> layout;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> index_buffer;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> vs_cb;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> ps_cb;
 		std::array<ID3D11SamplerState*, MAX_SAMPLERS> ps_ss;
 		std::array<ID3D11SamplerState*, MAX_SAMPLERS> ps_cached_ss;
 		GSVector2i viewport;
 		GSVector4i scissor;
 		u32 vb_stride;
-		ID3D11DepthStencilState* dss;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> dss;
 		u8 sref;
-		ID3D11BlendState* bs;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;
 		u8 bf;
-		ID3D11RenderTargetView* rt_view;
-		ID3D11DepthStencilView* dsv;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> rt_view;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsv;
 		GSTexture* cached_rt_view;
 		GSTexture* cached_dsv;
 	} m_state;
 
-	std::array<std::array<wil::com_ptr_nothrow<ID3D11Query>, 3>, NUM_TIMESTAMP_QUERIES> m_timestamp_queries = {};
+	std::array<std::array<Microsoft::WRL::ComPtr<ID3D11Query>, 3>, NUM_TIMESTAMP_QUERIES> m_timestamp_queries = {};
 	float m_accumulated_gpu_time = 0.0f;
 	u8 m_read_timestamp_query = 0;
 	u8 m_write_timestamp_query = 0;
@@ -173,79 +174,79 @@ private:
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11InputLayout> il;
-		wil::com_ptr_nothrow<ID3D11VertexShader> vs;
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps[static_cast<int>(ShaderConvert::Count)];
-		wil::com_ptr_nothrow<ID3D11SamplerState> ln;
-		wil::com_ptr_nothrow<ID3D11SamplerState> pt;
-		wil::com_ptr_nothrow<ID3D11DepthStencilState> dss;
-		wil::com_ptr_nothrow<ID3D11DepthStencilState> dss_write;
-		std::array<wil::com_ptr_nothrow<ID3D11BlendState>, 16> bs;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps[static_cast<int>(ShaderConvert::Count)];
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> ln;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> pt;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> dss;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> dss_write;
+		std::array<Microsoft::WRL::ComPtr<ID3D11BlendState>, 16> bs;
 	} m_convert;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11InputLayout> il;
-		wil::com_ptr_nothrow<ID3D11VertexShader> vs;
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps[static_cast<int>(PresentShader::Count)];
-		wil::com_ptr_nothrow<ID3D11Buffer> ps_cb;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps[static_cast<int>(PresentShader::Count)];
+		Microsoft::WRL::ComPtr<ID3D11Buffer> ps_cb;
 	} m_present;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps[2];
-		wil::com_ptr_nothrow<ID3D11Buffer> cb;
-		wil::com_ptr_nothrow<ID3D11BlendState> bs;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps[2];
+		Microsoft::WRL::ComPtr<ID3D11Buffer> cb;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;
 	} m_merge;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps[NUM_INTERLACE_SHADERS];
-		wil::com_ptr_nothrow<ID3D11Buffer> cb;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps[NUM_INTERLACE_SHADERS];
+		Microsoft::WRL::ComPtr<ID3D11Buffer> cb;
 	} m_interlace;
 
-	wil::com_ptr_nothrow<ID3D11PixelShader> m_fxaa_ps;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_fxaa_ps;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps;
-		wil::com_ptr_nothrow<ID3D11Buffer> cb;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> cb;
 	} m_shadeboost;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11DepthStencilState> dss;
-		wil::com_ptr_nothrow<ID3D11BlendState> bs;
-		wil::com_ptr_nothrow<ID3D11PixelShader> primid_init_ps[4];
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> dss;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> primid_init_ps[4];
 	} m_date;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11Buffer> cb;
-		wil::com_ptr_nothrow<ID3D11ComputeShader> cs_upscale;
-		wil::com_ptr_nothrow<ID3D11ComputeShader> cs_sharpen;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> cb;
+		Microsoft::WRL::ComPtr<ID3D11ComputeShader> cs_upscale;
+		Microsoft::WRL::ComPtr<ID3D11ComputeShader> cs_sharpen;
 	} m_cas;
 
 	struct
 	{
-		wil::com_ptr_nothrow<ID3D11InputLayout> il;
-		wil::com_ptr_nothrow<ID3D11VertexShader> vs;
-		wil::com_ptr_nothrow<ID3D11PixelShader> ps;
-		wil::com_ptr_nothrow<ID3D11BlendState> bs;
-		wil::com_ptr_nothrow<ID3D11Buffer> vs_cb;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> il;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> vs_cb;
 	} m_imgui;
 
 	// Shaders...
 
 	std::unordered_map<u32, GSVertexShader11> m_vs;
-	wil::com_ptr_nothrow<ID3D11Buffer> m_vs_cb;
-	std::unordered_map<u32, wil::com_ptr_nothrow<ID3D11GeometryShader>> m_gs;
-	std::unordered_map<PSSelector, wil::com_ptr_nothrow<ID3D11PixelShader>, GSHWDrawConfig::PSSelectorHash> m_ps;
-	wil::com_ptr_nothrow<ID3D11Buffer> m_ps_cb;
-	std::unordered_map<u32, wil::com_ptr_nothrow<ID3D11SamplerState>> m_ps_ss;
-	std::unordered_map<u32, wil::com_ptr_nothrow<ID3D11DepthStencilState>> m_om_dss;
-	std::unordered_map<u64, wil::com_ptr_nothrow<ID3D11BlendState>> m_om_bs;
-	wil::com_ptr_nothrow<ID3D11RasterizerState> m_rs;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_vs_cb;
+	std::unordered_map<u32, Microsoft::WRL::ComPtr<ID3D11GeometryShader>> m_gs;
+	std::unordered_map<PSSelector, Microsoft::WRL::ComPtr<ID3D11PixelShader>, GSHWDrawConfig::PSSelectorHash> m_ps;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ps_cb;
+	std::unordered_map<u32, Microsoft::WRL::ComPtr<ID3D11SamplerState>> m_ps_ss;
+	std::unordered_map<u32, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>> m_om_dss;
+	std::unordered_map<u64, Microsoft::WRL::ComPtr<ID3D11BlendState>> m_om_bs;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rs;
 
 	GSHWDrawConfig::VSConstantBuffer m_vs_cb_cache;
 	GSHWDrawConfig::PSConstantBuffer m_ps_cb_cache;
@@ -264,8 +265,8 @@ public:
 	static void SetD3DDebugObjectName(ID3D11DeviceChild* obj, std::string_view name);
 
 	__fi static GSDevice11* GetInstance() { return static_cast<GSDevice11*>(g_gs_device.get()); }
-	__fi ID3D11Device1* GetD3DDevice() const { return m_dev.get(); }
-	__fi ID3D11DeviceContext1* GetD3DContext() const { return m_ctx.get(); }
+	__fi ID3D11Device1* GetD3DDevice() const { return m_dev.Get(); }
+	__fi ID3D11DeviceContext1* GetD3DContext() const { return m_ctx.Get(); }
 
 	bool Create(GSVSyncMode vsync_mode, bool allow_present_throttle) override;
 	void Destroy() override;
@@ -349,7 +350,7 @@ public:
 
 	void ClearSamplerCache() override;
 
-	ID3D11Device1* operator->() { return m_dev.get(); }
-	operator ID3D11Device1*() { return m_dev.get(); }
-	operator ID3D11DeviceContext1*() { return m_ctx.get(); }
+	ID3D11Device1* operator->() { return m_dev.Get(); }
+	operator ID3D11Device1*() { return m_dev.Get(); }
+	operator ID3D11DeviceContext1*() { return m_ctx.Get(); }
 };

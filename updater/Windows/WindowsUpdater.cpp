@@ -19,6 +19,7 @@
 
 #include <wil/resource.h>
 #include <wil/win32_helpers.h>
+#include <wrl/client.h>
 
 #pragma comment(lib, "synchronization.lib")
 
@@ -73,7 +74,7 @@ private:
 	HWND m_progress_hwnd{};
 	HWND m_list_box_hwnd{};
 
-	wil::com_ptr_nothrow<ITaskbarList3> m_taskbar_list;
+	Microsoft::WRL::ComPtr<ITaskbarList3> m_taskbar_list;
 
 	int m_last_progress_percent = -1;
 	bool m_com_initialized = false;
@@ -176,7 +177,7 @@ bool Win32ProgressCallback::Create()
 
 		WNDCLASSEX wc = {sizeof(wc)};
 		wc.lpfnWndProc = WndProcThunk;
-		wc.hInstance = wil::GetModuleInstanceHandle();
+		wc.hInstance = GetModuleHandle(nullptr);
 		wc.hIcon = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 		wc.hIconSm = LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1));
 		wc.hCursor = LoadCursor(NULL, IDC_WAIT);

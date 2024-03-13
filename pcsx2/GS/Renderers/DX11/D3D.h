@@ -14,11 +14,12 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <wrl/client.h>
 
 namespace D3D
 {
 	// create a dxgi factory
-	wil::com_ptr_nothrow<IDXGIFactory5> CreateFactory(bool debug);
+	Microsoft::WRL::ComPtr<IDXGIFactory5> CreateFactory(bool debug);
 
 	// returns a list of all adapter information
 	std::vector<GSAdapterInfo> GetAdapterInfo(IDXGIFactory5* factory);
@@ -28,13 +29,13 @@ namespace D3D
 		float refresh_rate, DXGI_FORMAT format, DXGI_MODE_DESC* fullscreen_mode, IDXGIOutput** output);
 
 	// get an adapter based on name
-	wil::com_ptr_nothrow<IDXGIAdapter1> GetAdapterByName(IDXGIFactory5* factory, const std::string_view name);
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> GetAdapterByName(IDXGIFactory5* factory, const std::string_view name);
 
 	// returns the first adapter in the system
-	wil::com_ptr_nothrow<IDXGIAdapter1> GetFirstAdapter(IDXGIFactory5* factory);
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> GetFirstAdapter(IDXGIFactory5* factory);
 
 	// returns the adapter specified in the configuration, or the default
-	wil::com_ptr_nothrow<IDXGIAdapter1> GetChosenOrFirstAdapter(IDXGIFactory5* factory, const std::string_view name);
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> GetChosenOrFirstAdapter(IDXGIFactory5* factory, const std::string_view name);
 
 	// returns a utf-8 string of the specified adapter's name
 	std::string GetAdapterName(IDXGIAdapter1* adapter);
@@ -63,6 +64,6 @@ namespace D3D
 		Compute
 	};
 
-	wil::com_ptr_nothrow<ID3DBlob> CompileShader(ShaderType type, D3D_FEATURE_LEVEL feature_level, bool debug,
+	Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(ShaderType type, D3D_FEATURE_LEVEL feature_level, bool debug,
 		const std::string_view code, const D3D_SHADER_MACRO* macros = nullptr, const char* entry_point = "main");
 }; // namespace D3D

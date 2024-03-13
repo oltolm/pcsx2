@@ -11,7 +11,7 @@
 
 #include "fmt/format.h"
 
-GSTexture11::GSTexture11(wil::com_ptr_nothrow<ID3D11Texture2D> texture, const D3D11_TEXTURE2D_DESC& desc,
+GSTexture11::GSTexture11(Microsoft::WRL::ComPtr<ID3D11Texture2D> texture, const D3D11_TEXTURE2D_DESC& desc,
 	GSTexture::Type type, GSTexture::Format format)
 	: m_texture(std::move(texture))
 	, m_desc(desc)
@@ -68,7 +68,7 @@ bool GSTexture11::Update(const GSVector4i& r, const void* data, int pitch, int l
 		Common::AlignUpPow2((u32)r.right, bs), Common::AlignUpPow2((u32)r.bottom, bs), 1U};
 	const UINT subresource = layer; // MipSlice + (ArraySlice * MipLevels).
 
-	GSDevice11::GetInstance()->GetD3DContext()->UpdateSubresource(m_texture.get(), subresource, &box, data, pitch, 0);
+	GSDevice11::GetInstance()->GetD3DContext()->UpdateSubresource(m_texture.Get(), subresource, &box, data, pitch, 0);
 	m_needs_mipmaps_generated |= (layer == 0);
 	return true;
 }
@@ -96,18 +96,18 @@ void GSTexture11::SetDebugName(std::string_view name)
 	if (name.empty())
 		return;
 
-	GSDevice11::SetD3DDebugObjectName(m_texture.get(), name);
+	GSDevice11::SetD3DDebugObjectName(m_texture.Get(), name);
 	if (m_srv)
-		GSDevice11::SetD3DDebugObjectName(m_srv.get(), fmt::format("{} SRV", name));
+		GSDevice11::SetD3DDebugObjectName(m_srv.Get(), fmt::format("{} SRV", name));
 	if (m_rtv)
-		GSDevice11::SetD3DDebugObjectName(m_rtv.get(), fmt::format("{} RTV", name));
+		GSDevice11::SetD3DDebugObjectName(m_rtv.Get(), fmt::format("{} RTV", name));
 }
 
 #endif
 
 GSTexture11::operator ID3D11Texture2D*()
 {
-	return m_texture.get();
+	return m_texture.Get();
 }
 
 GSTexture11::operator ID3D11ShaderResourceView*()
@@ -122,25 +122,25 @@ GSTexture11::operator ID3D11ShaderResourceView*()
 			srvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 			srvd.Texture2D.MipLevels = 1;
 
-			GSDevice11::GetInstance()->GetD3DDevice()->CreateShaderResourceView(m_texture.get(), &srvd, m_srv.put());
+			GSDevice11::GetInstance()->GetD3DDevice()->CreateShaderResourceView(m_texture.Get(), &srvd, &m_srv);
 		}
 		else
 		{
-			GSDevice11::GetInstance()->GetD3DDevice()->CreateShaderResourceView(m_texture.get(), nullptr, m_srv.put());
+			GSDevice11::GetInstance()->GetD3DDevice()->CreateShaderResourceView(m_texture.Get(), nullptr, &m_srv);
 		}
 	}
 
-	return m_srv.get();
+	return m_srv.Get();
 }
 
 GSTexture11::operator ID3D11RenderTargetView*()
 {
 	if (!m_rtv)
 	{
-		GSDevice11::GetInstance()->GetD3DDevice()->CreateRenderTargetView(m_texture.get(), nullptr, m_rtv.put());
+		GSDevice11::GetInstance()->GetD3DDevice()->CreateRenderTargetView(m_texture.Get(), nullptr, &m_rtv);
 	}
 
-	return m_rtv.get();
+	return m_rtv.Get();
 }
 
 GSTexture11::operator ID3D11DepthStencilView*()
@@ -154,23 +154,23 @@ GSTexture11::operator ID3D11DepthStencilView*()
 			dsvd.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 			dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 
-			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.get(), &dsvd, m_dsv.put());
+			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.Get(), &dsvd, &m_dsv);
 		}
 		else
 		{
-			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.get(), nullptr, m_dsv.put());
+			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.Get(), nullptr, &m_dsv);
 		}
 	}
 
-	return m_dsv.get();
+	return m_dsv.Get();
 }
 
 GSTexture11::operator ID3D11UnorderedAccessView*()
 {
 	if (!m_uav)
-		GSDevice11::GetInstance()->GetD3DDevice()->CreateUnorderedAccessView(m_texture.get(), nullptr, m_uav.put());
+		GSDevice11::GetInstance()->GetD3DDevice()->CreateUnorderedAccessView(m_texture.Get(), nullptr, &m_uav);
 
-	return m_uav.get();
+	return m_uav.Get();
 }
 
 ID3D11DepthStencilView* GSTexture11::ReadOnlyDepthStencilView()
@@ -184,14 +184,14 @@ ID3D11DepthStencilView* GSTexture11::ReadOnlyDepthStencilView()
 			desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 			desc.Flags = D3D11_DSV_READ_ONLY_DEPTH;
 
-			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.get(), &desc, m_read_only_dsv.put());
+			GSDevice11::GetInstance()->GetD3DDevice()->CreateDepthStencilView(m_texture.Get(), &desc, &m_read_only_dsv);
 		}
 	}
 
-	return m_read_only_dsv.get();
+	return m_read_only_dsv.Get();
 }
 
-GSDownloadTexture11::GSDownloadTexture11(wil::com_ptr_nothrow<ID3D11Texture2D> tex, u32 width, u32 height, GSTexture::Format format)
+GSDownloadTexture11::GSDownloadTexture11(Microsoft::WRL::ComPtr<ID3D11Texture2D> tex, u32 width, u32 height, GSTexture::Format format)
 	: GSDownloadTexture(width, height, format)
 	, m_texture(std::move(tex))
 {
@@ -216,8 +216,8 @@ std::unique_ptr<GSDownloadTexture11> GSDownloadTexture11::Create(u32 width, u32 
 	desc.Usage = D3D11_USAGE_STAGING;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 
-	wil::com_ptr_nothrow<ID3D11Texture2D> tex;
-	HRESULT hr = GSDevice11::GetInstance()->GetD3DDevice()->CreateTexture2D(&desc, nullptr, tex.put());
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> tex;
+	HRESULT hr = GSDevice11::GetInstance()->GetD3DDevice()->CreateTexture2D(&desc, nullptr, &tex);
 	if (FAILED(hr))
 	{
 		Console.Error("GSDownloadTexture11: CreateTexture2D() failed: %08X", hr);
@@ -249,13 +249,13 @@ void GSDownloadTexture11::CopyFromTexture(
 	if (m_format == GSTexture::Format::DepthStencil)
 	{
 		GSDevice11::GetInstance()->GetD3DContext()->CopyResource(
-			m_texture.get(), *static_cast<GSTexture11*>(stex));
+			m_texture.Get(), *static_cast<GSTexture11*>(stex));
 	}
 	else
 	{
-		const CD3D11_BOX sbox(src.left, src.top, 0, src.right, src.bottom, 1);
+		const D3D11_BOX sbox = {(UINT)src.left, (UINT)src.top, 0, (UINT)src.right, (UINT)src.bottom, 1};
 		GSDevice11::GetInstance()->GetD3DContext()->CopySubresourceRegion(
-			m_texture.get(), 0, drc.x, drc.y, 0, *static_cast<GSTexture11*>(stex), src_level, &sbox);
+			m_texture.Get(), 0, drc.x, drc.y, 0, *static_cast<GSTexture11*>(stex), src_level, &sbox);
 	}
 
 	m_needs_flush = true;
@@ -267,7 +267,7 @@ bool GSDownloadTexture11::Map(const GSVector4i& rc)
 		return true;
 
 	D3D11_MAPPED_SUBRESOURCE sr;
-	HRESULT hr = GSDevice11::GetInstance()->GetD3DContext()->Map(m_texture.get(), 0, D3D11_MAP_READ, 0, &sr);
+	HRESULT hr = GSDevice11::GetInstance()->GetD3DContext()->Map(m_texture.Get(), 0, D3D11_MAP_READ, 0, &sr);
 	if (FAILED(hr))
 	{
 		Console.Error("GSDownloadTexture11: Map() failed: %08X", hr);
@@ -284,7 +284,7 @@ void GSDownloadTexture11::Unmap()
 	if (!IsMapped())
 		return;
 
-	GSDevice11::GetInstance()->GetD3DContext()->Unmap(m_texture.get(), 0);
+	GSDevice11::GetInstance()->GetD3DContext()->Unmap(m_texture.Get(), 0);
 	m_map_pointer = nullptr;
 }
 
@@ -306,7 +306,7 @@ void GSDownloadTexture11::SetDebugName(std::string_view name)
 	if (name.empty())
 		return;
 
-	GSDevice11::SetD3DDebugObjectName(m_texture.get(), name);
+	GSDevice11::SetD3DDebugObjectName(m_texture.Get(), name);
 }
 
 #endif
