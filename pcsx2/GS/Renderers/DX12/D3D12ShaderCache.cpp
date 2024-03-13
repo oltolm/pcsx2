@@ -409,7 +409,7 @@ D3D12ShaderCache::ComPtr<ID3DBlob> D3D12ShaderCache::GetShaderBlob(EntryType typ
 		return CompileAndAddShaderBlob(key, shader_code, macros, entry_point);
 
 	ComPtr<ID3DBlob> blob;
-	HRESULT hr = D3DCreateBlob(iter->second.blob_size, blob.put());
+	HRESULT hr = D3DCreateBlob(iter->second.blob_size, &blob);
 	if (FAILED(hr) || std::fseek(m_shader_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
 		std::fread(blob->GetBufferPointer(), 1, iter->second.blob_size, m_shader_blob_file) != iter->second.blob_size)
 	{
@@ -430,7 +430,7 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::GetPipelineState
 		return CompileAndAddPipeline(device, key, desc);
 
 	ComPtr<ID3DBlob> blob;
-	HRESULT hr = D3DCreateBlob(iter->second.blob_size, blob.put());
+	HRESULT hr = D3DCreateBlob(iter->second.blob_size, &blob);
 	if (FAILED(hr) || std::fseek(m_pipeline_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
 		std::fread(blob->GetBufferPointer(), 1, iter->second.blob_size, m_pipeline_blob_file) != iter->second.blob_size)
 	{
@@ -443,7 +443,7 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::GetPipelineState
 	desc_with_blob.CachedPSO.CachedBlobSizeInBytes = blob->GetBufferSize();
 
 	ComPtr<ID3D12PipelineState> pso;
-	hr = device->CreateGraphicsPipelineState(&desc_with_blob, IID_PPV_ARGS(pso.put()));
+	hr = device->CreateGraphicsPipelineState(&desc_with_blob, IID_PPV_ARGS(&pso));
 	if (FAILED(hr))
 	{
 		Console.Warning("Creating cached PSO failed: %08X. Invalidating cache.", hr);
@@ -464,7 +464,7 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::GetPipelineState
 		return CompileAndAddPipeline(device, key, desc);
 
 	ComPtr<ID3DBlob> blob;
-	HRESULT hr = D3DCreateBlob(iter->second.blob_size, blob.put());
+	HRESULT hr = D3DCreateBlob(iter->second.blob_size, &blob);
 	if (FAILED(hr) || std::fseek(m_pipeline_blob_file, iter->second.file_offset, SEEK_SET) != 0 ||
 		std::fread(blob->GetBufferPointer(), 1, iter->second.blob_size, m_pipeline_blob_file) != iter->second.blob_size)
 	{
@@ -477,7 +477,7 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::GetPipelineState
 	desc_with_blob.CachedPSO.CachedBlobSizeInBytes = blob->GetBufferSize();
 
 	ComPtr<ID3D12PipelineState> pso;
-	hr = device->CreateComputePipelineState(&desc_with_blob, IID_PPV_ARGS(pso.put()));
+	hr = device->CreateComputePipelineState(&desc_with_blob, IID_PPV_ARGS(&pso));
 	if (FAILED(hr))
 	{
 		Console.Warning("Creating cached PSO failed: %08X. Invalidating cache.", hr);
@@ -549,14 +549,14 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::CompileAndAddPip
 	ID3D12Device* device, const CacheIndexKey& key, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& gpdesc)
 {
 	ComPtr<ID3D12PipelineState> pso;
-	HRESULT hr = device->CreateGraphicsPipelineState(&gpdesc, IID_PPV_ARGS(pso.put()));
+	HRESULT hr = device->CreateGraphicsPipelineState(&gpdesc, IID_PPV_ARGS(&pso));
 	if (FAILED(hr))
 	{
 		Console.Error("Creating cached PSO failed: %08X", hr);
 		return {};
 	}
 
-	AddPipelineToBlob(key, pso.get());
+	AddPipelineToBlob(key, pso.Get());
 	return pso;
 }
 
@@ -564,14 +564,14 @@ D3D12ShaderCache::ComPtr<ID3D12PipelineState> D3D12ShaderCache::CompileAndAddPip
 	ID3D12Device* device, const CacheIndexKey& key, const D3D12_COMPUTE_PIPELINE_STATE_DESC& gpdesc)
 {
 	ComPtr<ID3D12PipelineState> pso;
-	HRESULT hr = device->CreateComputePipelineState(&gpdesc, IID_PPV_ARGS(pso.put()));
+	HRESULT hr = device->CreateComputePipelineState(&gpdesc, IID_PPV_ARGS(&pso));
 	if (FAILED(hr))
 	{
 		Console.Error("Creating cached compute PSO failed: %08X", hr);
 		return {};
 	}
 
-	AddPipelineToBlob(key, pso.get());
+	AddPipelineToBlob(key, pso.Get());
 	return pso;
 }
 
@@ -581,7 +581,7 @@ bool D3D12ShaderCache::AddPipelineToBlob(const CacheIndexKey& key, ID3D12Pipelin
 		return false;
 
 	ComPtr<ID3DBlob> blob;
-	HRESULT hr = pso->GetCachedBlob(blob.put());
+	HRESULT hr = pso->GetCachedBlob(&blob);
 	if (FAILED(hr))
 	{
 		Console.Warning("Failed to get cached PSO data: %08X", hr);
