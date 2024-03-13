@@ -5,11 +5,11 @@
 
 #include "common/Pcsx2Defs.h"
 #include "common/RedtapeWindows.h"
-#include "common/RedtapeWilCom.h"
 
 #include <array>
 #include <d3d12.h>
 #include <string_view>
+#include <wrl.h>
 
 class D3D12ShaderCache;
 
@@ -28,7 +28,7 @@ namespace D3D12
 
 		void Clear();
 
-		wil::com_ptr_nothrow<ID3D12RootSignature> Create(bool clear = true);
+		Microsoft::WRL::ComPtr<ID3D12RootSignature> Create(bool clear = true);
 
 		void SetInputAssemblerFlag();
 
@@ -59,8 +59,8 @@ namespace D3D12
 
 		void Clear();
 
-		wil::com_ptr_nothrow<ID3D12PipelineState> Create(ID3D12Device* device, bool clear = true);
-		wil::com_ptr_nothrow<ID3D12PipelineState> Create(
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Create(ID3D12Device* device, bool clear = true);
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Create(
 			ID3D12Device* device, D3D12ShaderCache& cache, bool clear = true);
 
 		void SetRootSignature(ID3D12RootSignature* rs);
@@ -119,8 +119,8 @@ namespace D3D12
 
 		void Clear();
 
-		wil::com_ptr_nothrow<ID3D12PipelineState> Create(ID3D12Device* device, bool clear = true);
-		wil::com_ptr_nothrow<ID3D12PipelineState> Create(
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Create(ID3D12Device* device, bool clear = true);
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Create(
 			ID3D12Device* device, D3D12ShaderCache& cache, bool clear = true);
 
 		void SetRootSignature(ID3D12RootSignature* rs);
