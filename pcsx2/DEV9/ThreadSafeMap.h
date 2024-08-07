@@ -60,8 +60,8 @@ public:
 		std::vector<Key> keys;
 		keys.reserve(map.size());
 
-		for (auto iter = map.begin(); iter != map.end(); ++iter)
-			keys.push_back(iter->first);
+		for (const auto& [key, value] : map)
+			keys.push_back(key);
 
 		return keys;
 	}

@@ -8162,19 +8162,19 @@ __ri void GSRendererHW::DrawPrims(GSTextureCache::Target* rt, GSTextureCache::Ta
 // If the EE uploaded a new CLUT since the last draw, use that.
 bool GSRendererHW::HasEEUpload(GSVector4i r)
 {
-	for (auto iter = m_draw_transfers.begin(); iter != m_draw_transfers.end(); ++iter)
+	for (const auto& draw_transfer : m_draw_transfers)
 	{
-		if (iter->draw == (s_n - 1) && iter->blit.DBP == m_cached_ctx.TEX0.TBP0 && GSUtil::HasSharedBits(iter->blit.DPSM, m_cached_ctx.TEX0.PSM))
+		if (draw_transfer.draw == (s_n - 1) && draw_transfer.blit.DBP == m_cached_ctx.TEX0.TBP0 && GSUtil::HasSharedBits(draw_transfer.blit.DPSM, m_cached_ctx.TEX0.PSM))
 		{
 			GSVector4i rect = r;
 
-			if (!GSUtil::HasCompatibleBits(iter->blit.DPSM, m_cached_ctx.TEX0.PSM))
+			if (!GSUtil::HasCompatibleBits(draw_transfer.blit.DPSM, m_cached_ctx.TEX0.PSM))
 			{
 				GSTextureCache::SurfaceOffsetKey sok;
-				sok.elems[0].bp = iter->blit.DBP;
-				sok.elems[0].bw = iter->blit.DBW;
-				sok.elems[0].psm = iter->blit.DPSM;
-				sok.elems[0].rect = iter->rect;
+				sok.elems[0].bp = draw_transfer.blit.DBP;
+				sok.elems[0].bw = draw_transfer.blit.DBW;
+				sok.elems[0].psm = draw_transfer.blit.DPSM;
+				sok.elems[0].rect = draw_transfer.rect;
 				sok.elems[1].bp = m_cached_ctx.TEX0.TBP0;
 				sok.elems[1].bw = m_cached_ctx.TEX0.TBW;
 				sok.elems[1].psm = m_cached_ctx.TEX0.PSM;

@@ -6788,7 +6788,7 @@ GSTextureCache::HashCacheEntry* GSTextureCache::LookupHashCache(const GIFRegTEX0
 	return &m_hash_cache.emplace(key, entry).first->second;
 }
 
-void GSTextureCache::RemoveFromHashCache(HashCacheMap::iterator it)
+GSTextureCache::HashCacheMap::iterator GSTextureCache::RemoveFromHashCache(HashCacheMap::iterator it)
 {
 	HashCacheEntry& e = it->second;
 	const u32 mem_usage = e.texture->GetMemUsage();
@@ -6797,7 +6797,7 @@ void GSTextureCache::RemoveFromHashCache(HashCacheMap::iterator it)
 	else
 		m_hash_cache_memory_usage -= mem_usage;
 	g_gs_device->Recycle(e.texture);
-	m_hash_cache.erase(it);
+	return m_hash_cache.erase(it);
 }
 
 void GSTextureCache::AgeHashCache()
@@ -6824,7 +6824,7 @@ void GSTextureCache::AgeHashCache()
 
 		if (++e.age > MAX_HASH_CACHE_AGE)
 		{
-			RemoveFromHashCache(it++);
+			it = RemoveFromHashCache(it);
 			continue;
 		}
 
@@ -8248,15 +8248,11 @@ void GSTextureCache::InjectHashCacheTexture(const HashCacheKey& key, GSTexture* 
 	// When we insert we update memory usage. Old texture gets removed below.
 	m_hash_cache_replacement_memory_usage += tex->GetMemUsage();
 
-	auto it = m_hash_cache.find(key);
-	if (it == m_hash_cache.end())
-	{
-		// We must've got evicted before we finished loading. No matter, add it in there anyway;
-		// if it's not used again, it'll get tossed out later.
-		const HashCacheEntry entry{tex, 1u, 0u, alpha_minmax, true, true};
-		m_hash_cache.emplace(key, entry);
+	const auto [it, inserted] = m_hash_cache.try_emplace(key, tex, 1u, 0u, alpha_minmax, true, true);
+	// We must've got evicted before we finished loading. No matter, add it in there anyway;
+	// if it's not used again, it'll get tossed out later.
+	if (inserted)
 		return;
-	}
 
 	// Reset age so we don't get thrown out too early.
 	it->second.age = 0;

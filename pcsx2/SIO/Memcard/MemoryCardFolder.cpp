@@ -2185,18 +2185,18 @@ void FileAccessHelper::CloseMatching(const std::string_view path)
 
 void FileAccessHelper::CloseAll()
 {
-	for (auto it = m_files.begin(); it != m_files.end(); ++it)
+	for (auto& file : m_files)
 	{
-		CloseFileHandle(it->second.fileHandle, it->second.fileRef->entry);
+		CloseFileHandle(file.second.fileHandle, file.second.fileRef->entry);
 	}
 	m_files.clear();
 }
 
 void FileAccessHelper::FlushAll()
 {
-	for (auto it = m_files.begin(); it != m_files.end(); ++it)
+	for (const auto& file : m_files)
 	{
-		std::fflush(it->second.fileHandle);
+		std::fflush(file.second.fileHandle);
 	}
 }
 

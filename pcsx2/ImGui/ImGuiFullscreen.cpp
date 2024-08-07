@@ -2859,19 +2859,19 @@ void ImGuiFullscreen::AddNotification(std::string key, float duration, std::stri
 
 	if (!key.empty())
 	{
-		for (auto it = s_notifications.begin(); it != s_notifications.end(); ++it)
+		for (auto& notification : s_notifications)
 		{
-			if (it->key == key)
+			if (notification.key == key)
 			{
-				it->duration = duration;
-				it->title = std::move(title);
-				it->text = std::move(text);
-				it->badge_path = std::move(image_path);
+				notification.duration = duration;
+				notification.title = std::move(title);
+				notification.text = std::move(text);
+				notification.badge_path = std::move(image_path);
 
 				// Don't fade it in again
 				const float time_passed =
-					static_cast<float>(Common::Timer::ConvertValueToSeconds(current_time - it->start_time));
-				it->start_time =
+					static_cast<float>(Common::Timer::ConvertValueToSeconds(current_time - notification.start_time));
+				notification.start_time =
 					current_time - Common::Timer::ConvertSecondsToValue(std::min(time_passed, NOTIFICATION_FADE_IN_TIME));
 				return;
 			}

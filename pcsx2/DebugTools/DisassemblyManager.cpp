@@ -446,9 +446,9 @@ void DisassemblyFunction::generateBranchLines()
 	};
 
 	LaneInfo lanes[NUM_LANES];
-	for (int i = 0; i < NUM_LANES; i++) {
-		lanes[i].used = false;
-		lanes[i].end = 0;
+	for (auto& lane : lanes) {
+		lane.used = false;
+		lane.end = 0;
 	}
 
 	u32 end = address+size;
@@ -478,12 +478,12 @@ void DisassemblyFunction::generateBranchLines()
 	}
 
 	std::sort(lines.begin(),lines.end());
-	for (size_t i = 0; i < lines.size(); i++)
+	for (auto& line : lines)
 	{
-		for (int l = 0; l < NUM_LANES; l++)
+		for (auto& lane : lanes)
 		{
-			if (lines[i].first > lanes[l].end)
-				lanes[l].used = false;
+			if (line.first > lane.end)
+				lane.used = false;
 		}
 
 		int lane = -1;
@@ -502,9 +502,9 @@ void DisassemblyFunction::generateBranchLines()
 			continue;
 		}
 
-		lanes[lane].end = lines[i].second;
+		lanes[lane].end = line.second;
 		lanes[lane].used = true;
-		lines[i].laneIndex = lane;
+		line.laneIndex = lane;
 	}
 }
 
