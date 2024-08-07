@@ -71,10 +71,9 @@ void mVUreset(microVU& mVU, bool resetReserve)
 			mVU.prog.prog[i] = new std::deque<microProgram*>();
 			continue;
 		}
-		std::deque<microProgram*>::iterator it(mVU.prog.prog[i]->begin());
-		for (; it != mVU.prog.prog[i]->end(); ++it)
+		for (auto prog : *mVU.prog.prog[i])
 		{
-			mVUdeleteProg(mVU, it[0]);
+			mVUdeleteProg(mVU, prog);
 		}
 		mVU.prog.prog[i]->clear();
 		mVU.prog.quick[i].block = NULL;
@@ -90,10 +89,9 @@ void mVUclose(microVU& mVU)
 	{
 		if (!mVU.prog.prog[i])
 			continue;
-		std::deque<microProgram*>::iterator it(mVU.prog.prog[i]->begin());
-		for (; it != mVU.prog.prog[i]->end(); ++it)
+		for (auto prog : *mVU.prog.prog[i])
 		{
-			mVUdeleteProg(mVU, it[0]);
+			mVUdeleteProg(mVU, prog);
 		}
 		safe_delete(mVU.prog.prog[i]);
 	}
@@ -200,10 +198,9 @@ void mVUprintUniqueRatio(microVU& mVU)
 		microProgramList* list = mVU.prog.prog[pc];
 		if (!list)
 			continue;
-		std::deque<microProgram*>::iterator it(list->begin());
-		for (; it != list->end(); ++it)
+		for (auto prog : *list)
 		{
-			v.push_back(mVUrangesHash(mVU, *it[0]));
+			v.push_back(mVUrangesHash(mVU, *prog));
 		}
 	}
 	u32 total = v.size();
@@ -251,26 +248,23 @@ _mVUt __fi void* mVUsearchProg(u32 startPC, uptr pState)
 
 	if (!quick.prog) // If null, we need to search for new program
 	{
-		std::deque<microProgram*>::iterator it(list->begin());
-		for (; it != list->end(); ++it)
+		auto it = std::find_if(list->begin(), list->end(), [&](auto prog) {
+			return mVUcmpProg(mVU, *prog);
+		});
+		if (it != list->end())
 		{
-			bool b = mVUcmpProg(mVU, *it[0]);
+			quick.block = it[0]->block[startPC / 8];
+			quick.prog  = it[0];
+			list->erase(it);
+			list->push_front(quick.prog);
 
-			if (b)
+			// Sanity check, in case for some reason the program compilation aborted half way through (JALR for example)
+			if (quick.block == nullptr)
 			{
-				quick.block = it[0]->block[startPC / 8];
-				quick.prog  = it[0];
-				list->erase(it);
-				list->push_front(quick.prog);
-
-				// Sanity check, in case for some reason the program compilation aborted half way through (JALR for example)
-				if (quick.block == nullptr)
-				{
-					void* entryPoint = mVUblockFetch(mVU, startPC, pState);
-					return entryPoint;
-				}
-				return mVUentryGet(mVU, quick.block, startPC, pState);
+				void* entryPoint = mVUblockFetch(mVU, startPC, pState);
+				return entryPoint;
 			}
+			return mVUentryGet(mVU, quick.block, startPC, pState);
 		}
 
 		// If cleared and program not found, make a new program instance
