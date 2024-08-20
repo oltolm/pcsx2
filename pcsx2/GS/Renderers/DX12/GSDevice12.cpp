@@ -480,7 +480,6 @@ void GSDevice12::DeferObjectDestruction(ID3D12DeviceChild* resource)
 	if (!resource)
 		return;
 
-	resource->AddRef();
 	m_command_lists[m_current_command_list].pending_resources.emplace_back(nullptr, resource);
 }
 
@@ -489,10 +488,6 @@ void GSDevice12::DeferResourceDestruction(D3D12MA::Allocation* allocation, ID3D1
 	if (!resource)
 		return;
 
-	if (allocation)
-		allocation->AddRef();
-
-	resource->AddRef();
 	m_command_lists[m_current_command_list].pending_resources.emplace_back(allocation, resource);
 }
 
@@ -516,12 +511,6 @@ void GSDevice12::DestroyPendingResources(CommandListResources& cmdlist)
 		dd.first.Free(dd.second);
 	cmdlist.pending_descriptors.clear();
 
-	for (const auto& it : cmdlist.pending_resources)
-	{
-		it.second->Release();
-		if (it.first)
-			it.first->Release();
-	}
 	cmdlist.pending_resources.clear();
 }
 
