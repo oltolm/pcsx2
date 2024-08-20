@@ -13,7 +13,7 @@
 
 #include <dxgi1_5.h>
 #include <d3d11_1.h>
-#include <wrl.h>
+#include <wrl/client.h>
 
 struct GSVertexShader11
 {
@@ -140,23 +140,23 @@ private:
 	struct
 	{
 		D3D11_PRIMITIVE_TOPOLOGY topology;
-		ID3D11InputLayout* layout;
-		ID3D11Buffer* index_buffer;
-		ID3D11VertexShader* vs;
-		ID3D11Buffer* vs_cb;
 		std::array<ID3D11ShaderResourceView*, MAX_TEXTURES> ps_sr_views;
-		ID3D11PixelShader* ps;
-		ID3D11Buffer* ps_cb;
+		Microsoft::WRL::ComPtr<ID3D11InputLayout> layout;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> index_buffer;
+		Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> vs_cb;
+		Microsoft::WRL::ComPtr<ID3D11PixelShader> ps;
+		Microsoft::WRL::ComPtr<ID3D11Buffer> ps_cb;
 		std::array<ID3D11SamplerState*, MAX_SAMPLERS> ps_ss;
 		GSVector2i viewport;
 		GSVector4i scissor;
 		u32 vb_stride;
-		ID3D11DepthStencilState* dss;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilState> dss;
 		u8 sref;
-		ID3D11BlendState* bs;
+		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;
 		u8 bf;
-		ID3D11RenderTargetView* rt_view;
-		ID3D11DepthStencilView* dsv;
+		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> rt_view;
+		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsv;
 	} m_state;
 
 	std::array<std::array<Microsoft::WRL::ComPtr<ID3D11Query>, 3>, NUM_TIMESTAMP_QUERIES> m_timestamp_queries = {};
