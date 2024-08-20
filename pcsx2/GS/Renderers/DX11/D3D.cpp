@@ -24,8 +24,6 @@
 #include <d3dcompiler.h>
 #include <fstream>
 
-#include "fmt/format.h"
-
 static u32 s_next_bad_shader_id = 1;
 
 Microsoft::WRL::ComPtr<IDXGIFactory5> D3D::CreateFactory(bool debug)

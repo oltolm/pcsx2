@@ -137,7 +137,7 @@ private:
 		std::array<ComPtr<ID3D12GraphicsCommandList4>, 2> command_lists;
 		D3D12DescriptorAllocator descriptor_allocator;
 		D3D12GroupedSamplerAllocator<SAMPLER_GROUP_SIZE> sampler_allocator;
-		std::vector<std::pair<D3D12MA::Allocation*, ID3D12DeviceChild*>> pending_resources;
+		std::vector<std::pair<ComPtr<D3D12MA::Allocation>, ComPtr<ID3D12DeviceChild>>> pending_resources;
 		std::vector<std::pair<D3D12DescriptorHeapManager&, u32>> pending_descriptors;
 		u64 ready_fence_value = 0;
 		bool init_command_list_used = false;

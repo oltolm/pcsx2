@@ -21,6 +21,7 @@
 #include <string>
 
 #include <wrl.h>
+#include <wrl/client.h>
 #include "DEV9/PacketReader/MAC_Address.h"
 #include "DEV9/AdapterUtils.h"
 
@@ -229,9 +230,9 @@ HANDLE TAPOpen(const std::string& device_guid)
 		0,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
-		0));
+		NULL));
 
-	if (!handle)
+	if (handle == INVALID_HANDLE_VALUE)
 	{
 		return INVALID_HANDLE_VALUE;
 	}
@@ -380,8 +381,8 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 	PIP_ADAPTER_ADDRESSES bridgeAdapter = nullptr;
 
 	//Create Instance of INetCfg
-	INetCfg *netcfg = nullptr;
-	auto hr = CoCreateInstance(CLSID_CNetCfg, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&netcfg));
+	Microsoft::WRL::ComPtr<INetCfg> netcfg;
+	auto hr = CoCreateInstance(__uuidof(CNetCfg), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&netcfg));
 	if (SUCCEEDED(hr))
 	{
 		HRESULT hr = netcfg->Initialize(nullptr);
@@ -465,7 +466,6 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 								}
 							}
 						}
-						components->Reset();
 						if (bridgeAdapter != nullptr)
 							break;
 					}

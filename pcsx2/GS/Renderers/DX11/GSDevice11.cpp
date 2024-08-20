@@ -551,18 +551,10 @@ void GSDevice11::Destroy()
 	m_om_bs.clear();
 	m_rs.Reset();
 
-	if (m_state.rt_view)
-	{
-		m_state.rt_view->Release();
-		m_state.rt_view = nullptr;
-	}
+	m_state.rt_view.Reset();
 	m_state.cached_rt_view = nullptr;
 
-	if (m_state.dsv)
-	{
-		m_state.dsv->Release();
-		m_state.dsv = nullptr;
-	}
+	m_state.dsv.Reset();
 	m_state.cached_dsv = nullptr;
 
 	m_shader_cache.Close();
@@ -942,16 +934,9 @@ GSDevice::PresentResult GSDevice11::BeginPresent(bool frame_skip)
 
 	m_ctx->ClearRenderTargetView(m_swap_chain_rtv.Get(), s_present_clear_color.data());
 	m_ctx->OMSetRenderTargets(1, m_swap_chain_rtv.GetAddressOf(), nullptr);
-	if (m_state.rt_view)
-		m_state.rt_view->Release();
-	m_state.rt_view = m_swap_chain_rtv.Get();
-	m_state.rt_view->AddRef();
+	m_state.rt_view = m_swap_chain_rtv;
 	m_state.cached_rt_view = nullptr;
-	if (m_state.dsv)
-	{
-		m_state.dsv->Release();
-		m_state.dsv = nullptr;
-	}
+	m_state.dsv = nullptr;
 	m_state.cached_dsv = nullptr;
 
 	g_perfmon.Put(GSPerfMon::RenderPasses, 1);
@@ -2295,7 +2280,7 @@ bool GSDevice11::IASetIndexBuffer(const void* index, u32 count)
 
 void GSDevice11::IASetIndexBuffer(ID3D11Buffer* buffer)
 {
-	if (m_state.index_buffer != buffer)
+	if (m_state.index_buffer.Get() != buffer)
 	{
 		m_ctx->IASetIndexBuffer(buffer, DXGI_FORMAT_R16_UINT, 0);
 		m_state.index_buffer = buffer;
@@ -2304,7 +2289,7 @@ void GSDevice11::IASetIndexBuffer(ID3D11Buffer* buffer)
 
 void GSDevice11::IASetInputLayout(ID3D11InputLayout* layout)
 {
-	if (m_state.layout != layout)
+	if (m_state.layout.Get() != layout)
 	{
 		m_state.layout = layout;
 
@@ -2324,14 +2309,14 @@ void GSDevice11::IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY topology)
 
 void GSDevice11::VSSetShader(ID3D11VertexShader* vs, ID3D11Buffer* vs_cb)
 {
-	if (m_state.vs != vs)
+	if (m_state.vs.Get() != vs)
 	{
 		m_state.vs = vs;
 
 		m_ctx->VSSetShader(vs, nullptr, 0);
 	}
 
-	if (m_state.vs_cb != vs_cb)
+	if (m_state.vs_cb.Get() != vs_cb)
 	{
 		m_state.vs_cb = vs_cb;
 
@@ -2356,14 +2341,14 @@ void GSDevice11::ClearSamplerCache()
 
 void GSDevice11::PSSetShader(ID3D11PixelShader* ps, ID3D11Buffer* ps_cb)
 {
-	if (m_state.ps != ps)
+	if (m_state.ps.Get() != ps)
 	{
 		m_state.ps = ps;
 
 		m_ctx->PSSetShader(ps, nullptr, 0);
 	}
 
-	if (m_state.ps_cb != ps_cb)
+	if (m_state.ps_cb.Get() != ps_cb)
 	{
 		m_state.ps_cb = ps_cb;
 
@@ -2432,7 +2417,7 @@ void GSDevice11::PSUnbindConflictingSRVs(GSTexture* tex1, GSTexture* tex2)
 
 void GSDevice11::OMSetDepthStencilState(ID3D11DepthStencilState* dss, u8 sref)
 {
-	if (m_state.dss != dss || (dss && m_state.sref != sref))
+	if (m_state.dss.Get() != dss || (dss && m_state.sref != sref))
 	{
 		m_state.dss = dss;
 		m_state.sref = sref;
@@ -2443,7 +2428,7 @@ void GSDevice11::OMSetDepthStencilState(ID3D11DepthStencilState* dss, u8 sref)
 
 void GSDevice11::OMSetBlendState(ID3D11BlendState* bs, u8 bf)
 {
-	if (m_state.bs != bs || (bs && m_state.bf != bf))
+	if (m_state.bs.Get() != bs || (bs && m_state.bf != bf))
 	{
 		m_state.bs = bs;
 		m_state.bf = bf;
@@ -2470,24 +2455,16 @@ void GSDevice11::OMSetRenderTargets(GSTexture* rt, GSTexture* ds, const GSVector
 		dsv = *static_cast<GSTexture11*>(ds);
 	}
 
-	const bool changed = (m_state.rt_view != rtv || m_state.dsv != dsv);
+	const bool changed = (m_state.rt_view.Get() != rtv || m_state.dsv.Get() != dsv);
 	g_perfmon.Put(GSPerfMon::RenderPasses, static_cast<double>(changed));
 
-	if (m_state.rt_view != rtv)
+	if (m_state.rt_view.Get() != rtv)
 	{
-		if (m_state.rt_view)
-			m_state.rt_view->Release();
-		if (rtv)
-			rtv->AddRef();
 		m_state.rt_view = rtv;
 		m_state.cached_rt_view = rt;
 	}
-	if (m_state.dsv != dsv)
+	if (m_state.dsv.Get() != dsv)
 	{
-		if (m_state.dsv)
-			m_state.dsv->Release();
-		if (dsv)
-			dsv->AddRef();
 		m_state.dsv = dsv;
 		m_state.cached_dsv = ds;
 	}
@@ -2739,12 +2716,12 @@ void GSDevice11::RenderHW(GSHWDrawConfig& config)
 	// Make sure no tex is bound as both rtv and srv at the same time.
 	// All conflicts should've been taken care of by PSUnbindConflictingSRVs.
 	// It is fine to do the optimiation when on slot 0 tex is fb, tex is ds, and slot 2 sw blend as they are copies bound to srv.
-	if (!draw_rt && draw_ds && m_state.rt_view && m_state.cached_rt_view && m_state.rt_view == *(GSTexture11*)m_state.cached_rt_view &&
+	if (!draw_rt && draw_ds && m_state.rt_view && m_state.cached_rt_view && m_state.rt_view.Get() == *(GSTexture11*)m_state.cached_rt_view &&
 		m_state.cached_dsv == draw_ds && config.tex != m_state.cached_rt_view && m_state.cached_rt_view->GetSize() == draw_ds->GetSize())
 	{
 		draw_rt = m_state.cached_rt_view;
 	}
-	else if (!draw_ds && draw_rt && m_state.dsv && m_state.cached_dsv && m_state.dsv == *(GSTexture11*)m_state.cached_dsv &&
+	else if (!draw_ds && draw_rt && m_state.dsv && m_state.cached_dsv && m_state.dsv.Get() == *(GSTexture11*)m_state.cached_dsv &&
 		m_state.cached_rt_view == draw_rt && config.tex != m_state.cached_dsv && m_state.cached_dsv->GetSize() == draw_rt->GetSize())
 	{
 		draw_ds = m_state.cached_dsv;
