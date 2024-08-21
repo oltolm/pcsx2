@@ -472,18 +472,18 @@ void PageFaultHandler::SignalHandler(int sig, siginfo_t* info, void* ctx)
 #endif
 
 	// Executing the handler concurrently from multiple threads wouldn't go down well.
-	s_exception_handler_mutex.lock();
-
-	// Prevent recursive exception filtering.
-	HandlerResult result = HandlerResult::ExecuteNextHandler;
-	if (!s_in_exception_handler)
 	{
-		s_in_exception_handler = true;
-		result = HandlePageFault(exception_pc, exception_address, is_write);
-		s_in_exception_handler = false;
-	}
+		std::lock_guard lock(s_exception_handler_mutex);
 
-	s_exception_handler_mutex.unlock();
+		// Prevent recursive exception filtering.
+		HandlerResult result = HandlerResult::ExecuteNextHandler;
+		if (!s_in_exception_handler)
+		{
+			s_in_exception_handler = true;
+			result = HandlePageFault(exception_pc, exception_address, is_write);
+			s_in_exception_handler = false;
+		}
+	}
 
 	// Resumes execution right where we left off (re-executes instruction that caused the SIGSEGV).
 	if (result == HandlerResult::ContinueExecution)

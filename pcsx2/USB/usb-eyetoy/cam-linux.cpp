@@ -56,11 +56,10 @@ namespace usb_eyetoy
 
 		static void store_mpeg_frame(const unsigned char* data, const unsigned int len)
 		{
-			mpeg_mutex.lock();
+			std::lock_guard lock(mpeg_mutex);
 			if (len > 0)
 				memcpy(mpeg_buffer.start, data, len);
 			mpeg_buffer.length = len;
-			mpeg_mutex.unlock();
 		}
 
 		static void process_image(const unsigned char* data, int size)
