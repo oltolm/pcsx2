@@ -355,11 +355,10 @@ namespace usb_eyetoy
 
 		void store_mpeg_frame(const unsigned char* data, const unsigned int len)
 		{
-			mpeg_mutex.lock();
+			std::lock_guard lock(mpeg_mutex);
 			if (len > 0)
 				memcpy(mpeg_buffer.start, data, len);
 			mpeg_buffer.length = len;
-			mpeg_mutex.unlock();
 		}
 
 		void dshow_callback(unsigned char* data, int len, int bitsperpixel)
@@ -559,13 +558,12 @@ namespace usb_eyetoy
 
 		int DirectShow::GetImage(uint8_t* buf, size_t len)
 		{
-			mpeg_mutex.lock();
+			std::lock_guard lock(mpeg_mutex);
 			int len2 = mpeg_buffer.length;
 			if ((unsigned int)len < mpeg_buffer.length)
 				len2 = len;
 			memcpy(buf, mpeg_buffer.start, len2);
 			mpeg_buffer.length = 0;
-			mpeg_mutex.unlock();
 			return len2;
 		};
 
