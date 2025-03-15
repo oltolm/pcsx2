@@ -12,7 +12,9 @@
 #include "QtHost.h"
 #include "QtUtils.h"
 #include "SettingWidgetBinder.h"
+#ifdef USE_DEBUGGER
 #include "Debugger/Docking/DockManager.h"
+#endif
 #include "Settings/AchievementLoginDialog.h"
 #include "Settings/ControllerSettingsWindow.h"
 #include "Settings/GameListSettingsWidget.h"
@@ -594,7 +596,9 @@ void MainWindow::quit()
 
 void MainWindow::destroySubWindows()
 {
+#ifdef USE_DEBUGGER
 	DebuggerWindow::destroyInstance();
+#endif
 
 	if (m_controller_settings_window)
 	{
@@ -805,6 +809,7 @@ void MainWindow::onAchievementsLoginRequested(Achievements::LoginRequestReason r
 
 void MainWindow::onAchievementsHardcoreModeChanged(bool enabled)
 {
+#ifdef USE_DEBUGGER
 	// disable debugger while hardcore mode is active
 	m_ui.actionDebugger->setDisabled(enabled);
 
@@ -818,6 +823,7 @@ void MainWindow::onAchievementsHardcoreModeChanged(bool enabled)
 		if (g_debugger_window && !DebugInterface::getPauseOnEntry())
 			DebuggerWindow::destroyInstance();
 	}
+#endif
 }
 
 void MainWindow::onSettingsTriggeredFromToolbar()
@@ -1102,7 +1108,7 @@ bool MainWindow::shouldMouseLock() const
 	if (m_display_created == false || m_display_surface == nullptr && !isRenderingToMain())
 		return false;
 
-	bool windowsHidden = (!g_debugger_window || g_debugger_window->isHidden()) &&
+	bool windowsHidden = //(!g_debugger_window || g_debugger_window->isHidden()) &&
 	                     (!m_controller_settings_window || m_controller_settings_window->isHidden()) &&
 	                     (!m_settings_window || m_settings_window->isHidden());
 
@@ -1446,6 +1452,7 @@ void MainWindow::onGameListEntryContextMenuRequested(const QPoint& point)
 			action = menu.addAction(tr("Full Boot"));
 			connect(action, &QAction::triggered, [this, entry]() { startGameListEntry(*entry, std::nullopt, false); });
 
+#ifdef USE_DEBUGGER
 			if (m_ui.menuDebug->menuAction()->isVisible())
 			{
 				action = menu.addAction(tr("Boot and Debug"));
@@ -1455,6 +1462,7 @@ void MainWindow::onGameListEntryContextMenuRequested(const QPoint& point)
 					DebuggerWindow::getInstance()->show();
 				});
 			}
+#endif
 
 			menu.addSeparator();
 			populateLoadStateMenu(&menu, QString::fromStdString(entry->path), QString::fromStdString(entry->serial), entry->crc);
@@ -2706,8 +2714,10 @@ void MainWindow::doGameSettings(const char* category)
 
 void MainWindow::openDebugger()
 {
+#ifdef USE_DEBUGGER
 	DebuggerWindow* dwnd = DebuggerWindow::getInstance();
 	dwnd->isVisible() ? dwnd->activateWindow() : dwnd->show();
+#endif
 }
 
 void MainWindow::doControllerSettings(ControllerSettingsWindow::Category category)

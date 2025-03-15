@@ -14,7 +14,9 @@
 #include "Tools/InputRecording/InputRecordingViewer.h"
 #include "Settings/ControllerSettingsWindow.h"
 #include "Settings/SettingsWindow.h"
+#ifdef USE_DEBUGGER
 #include "Debugger/DebuggerWindow.h"
+#endif
 #include "ui_MainWindow.h"
 
 class QProgressBar;
