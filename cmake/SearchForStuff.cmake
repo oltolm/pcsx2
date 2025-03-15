@@ -135,6 +135,7 @@ if(USE_DEBUGGER)
 	# The docking system for the debugger.
 	find_package(KDDockWidgets-qt6 2.3.0 REQUIRED)
 endif()
+endif()
 
 if(WIN32)
 	add_subdirectory(3rdparty/rainterface EXCLUDE_FROM_ALL)

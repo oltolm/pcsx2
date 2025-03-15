@@ -85,15 +85,6 @@ target_sources(pcsx2-qt PRIVATE
 	Settings/ControllerSettingsWindow.h
 	Settings/ControllerSettingsWindow.ui
 	Settings/ControllerSettingWidgetBinder.h
-	Settings/DebugAnalysisSettingsTab.ui
-	Settings/DebugAnalysisSettingsWidget.cpp
-	Settings/DebugAnalysisSettingsWidget.h
-	Settings/DebugAnalysisSettingsWidget.ui
-	Settings/DebugGSSettingsTab.ui
-	Settings/DebugLoggingSettingsTab.ui
-	Settings/DebugUserInterfaceSettingsTab.ui
-	Settings/DebugSettingsWidget.cpp
-	Settings/DebugSettingsWidget.h
 	Settings/EmulationSettingsWidget.cpp
 	Settings/EmulationSettingsWidget.h
 	Settings/EmulationSettingsWidget.ui
@@ -177,6 +168,19 @@ target_sources(pcsx2-qt PRIVATE
 	Settings/USBBindingWidget_GunCon2.ui
 	Settings/USBBindingWidget_RyojouhenCon.ui
 	Settings/USBBindingWidget_ShinkansenCon.ui
+)
+
+if(USE_DEBUGGER)
+	target_sources(pcsx2-qt PRIVATE
+	Settings/DebugAnalysisSettingsTab.ui
+	Settings/DebugAnalysisSettingsWidget.cpp
+	Settings/DebugAnalysisSettingsWidget.h
+	Settings/DebugAnalysisSettingsWidget.ui
+	Settings/DebugGSSettingsTab.ui
+	Settings/DebugLoggingSettingsTab.ui
+	Settings/DebugUserInterfaceSettingsTab.ui
+	Settings/DebugSettingsWidget.cpp
+	Settings/DebugSettingsWidget.h
 	Debugger/AnalysisOptionsDialog.cpp
 	Debugger/AnalysisOptionsDialog.h
 	Debugger/AnalysisOptionsDialog.ui
@@ -263,6 +267,10 @@ target_sources(pcsx2-qt PRIVATE
 	Debugger/SymbolTree/SymbolTreeView.ui
 	Debugger/SymbolTree/TypeString.cpp
 	Debugger/SymbolTree/TypeString.h
+	)
+endif()
+
+target_sources(pcsx2-qt PRIVATE
 	Tools/InputRecording/NewInputRecordingDlg.cpp
 	Tools/InputRecording/NewInputRecordingDlg.h
 	Tools/InputRecording/NewInputRecordingDlg.ui
@@ -298,7 +306,6 @@ target_link_libraries(pcsx2-qt PRIVATE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
-	KDAB::kddockwidgets
 )
 
 if(NOT WIN32 AND NOT APPLE)
@@ -307,6 +314,11 @@ endif()
 
 if(UNIX AND NOT APPLE)
 	target_link_libraries(pcsx2-qt PRIVATE Fontconfig::Fontconfig)
+endif()
+
+if(USE_DEBUGGER)
+	target_link_libraries(pcsx2-qt PRIVATE KDAB::kddockwidgets)
+	target_compile_definitions(pcsx2-qt PRIVATE USE_DEBUGGER)
 endif()
 
 # Our Qt builds may have exceptions on, so force them off.
