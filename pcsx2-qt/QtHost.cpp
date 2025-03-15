@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "AutoUpdaterDialog.h"
+#ifdef USE_DEGUGGER
 #include "Debugger/DebuggerWindow.h"
+#endif
 #include "DisplayWidget.h"
 #include "GameList/GameListWidget.h"
 #include "LogWindow.h"
@@ -2412,11 +2414,13 @@ int main(int argc, char* argv[])
 	if (s_start_big_picture_mode || Host::GetBaseBoolSettingValue("UI", "StartBigPictureMode", false))
 		g_emu_thread->startFullscreenUI(s_start_fullscreen || Host::GetBaseBoolSettingValue("UI", "StartFullscreen", false));
 
+#ifdef USE_DEBUGGER
 	if (s_boot_and_debug || DebuggerWindow::shouldShowOnStartup())
 	{
 		DebugInterface::setPauseOnEntry(s_boot_and_debug);
 		g_main_window->openDebugger();
 	}
+#endif
 
 	// Skip the update check if we're booting a game directly.
 	if (autoboot)
