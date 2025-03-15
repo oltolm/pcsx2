@@ -83,15 +83,6 @@ target_sources(pcsx2-qt PRIVATE
 	Settings/ControllerSettingsWindow.h
 	Settings/ControllerSettingsWindow.ui
 	Settings/ControllerSettingWidgetBinder.h
-	Settings/DebugAnalysisSettingsWidget.cpp
-	Settings/DebugAnalysisSettingsWidget.h
-	Settings/DebugAnalysisSettingsWidget.ui
-	Settings/DebugUserInterfaceSettingsWidget.cpp
-	Settings/DebugUserInterfaceSettingsWidget.h
-	Settings/DebugUserInterfaceSettingsWidget.ui
-	Settings/DebugSettingsWidget.cpp
-	Settings/DebugSettingsWidget.h
-	Settings/DebugSettingsWidget.ui
 	Settings/EmulationSettingsWidget.cpp
 	Settings/EmulationSettingsWidget.h
 	Settings/EmulationSettingsWidget.ui
@@ -158,6 +149,26 @@ target_sources(pcsx2-qt PRIVATE
 	Settings/USBBindingWidget_GunCon2.ui
 	Settings/USBBindingWidget_RyojouhenCon.ui
 	Settings/USBBindingWidget_ShinkansenCon.ui
+	Tools/InputRecording/NewInputRecordingDlg.cpp
+	Tools/InputRecording/NewInputRecordingDlg.h
+	Tools/InputRecording/NewInputRecordingDlg.ui
+	Tools/InputRecording/InputRecordingViewer.cpp
+	Tools/InputRecording/InputRecordingViewer.h
+	Tools/InputRecording/InputRecordingViewer.ui
+	resources/resources.qrc
+)
+
+if(USE_DEBUGGER)
+	target_sources(pcsx2-qt PRIVATE
+	Settings/DebugAnalysisSettingsWidget.cpp
+	Settings/DebugAnalysisSettingsWidget.h
+	Settings/DebugAnalysisSettingsWidget.ui
+	Settings/DebugUserInterfaceSettingsWidget.cpp
+	Settings/DebugUserInterfaceSettingsWidget.h
+	Settings/DebugUserInterfaceSettingsWidget.ui
+	Settings/DebugSettingsWidget.cpp
+	Settings/DebugSettingsWidget.h
+	Settings/DebugSettingsWidget.ui
 	Debugger/AnalysisOptionsDialog.cpp
 	Debugger/AnalysisOptionsDialog.h
 	Debugger/AnalysisOptionsDialog.ui
@@ -242,15 +253,8 @@ target_sources(pcsx2-qt PRIVATE
 	Debugger/SymbolTree/SymbolTreeViews.h
 	Debugger/SymbolTree/SymbolTreeView.ui
 	Debugger/SymbolTree/TypeString.cpp
-	Debugger/SymbolTree/TypeString.h
-	Tools/InputRecording/NewInputRecordingDlg.cpp
-	Tools/InputRecording/NewInputRecordingDlg.h
-	Tools/InputRecording/NewInputRecordingDlg.ui
-	Tools/InputRecording/InputRecordingViewer.cpp
-	Tools/InputRecording/InputRecordingViewer.h
-	Tools/InputRecording/InputRecordingViewer.ui
-	resources/resources.qrc
-)
+	Debugger/SymbolTree/TypeString.h)
+endif()
 
 file(GLOB TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Translations/*.ts)
 
@@ -270,8 +274,11 @@ target_link_libraries(pcsx2-qt PRIVATE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
-	KDAB::kddockwidgets
 )
+
+if(USE_DEBUGGER)
+	target_link_libraries(pcsx2-qt PRIVATE KDAB::kddockwidgets)
+endif()
 
 # Our Qt builds may have exceptions on, so force them off.
 target_compile_definitions(pcsx2-qt PRIVATE QT_NO_EXCEPTIONS)

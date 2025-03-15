@@ -40,7 +40,7 @@ static bool SupportsTextureFormat(ID3D11Device* dev, DXGI_FORMAT format)
 
 GSDevice11::GSDevice11()
 {
-	memset(&m_state, 0, sizeof(m_state));
+	memset((void*)&m_state, 0, sizeof(m_state));
 
 	m_state.topology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	m_state.bf = -1;
