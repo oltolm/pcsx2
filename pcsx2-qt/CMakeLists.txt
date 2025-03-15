@@ -158,6 +158,17 @@ target_sources(pcsx2-qt PRIVATE
 	Settings/USBBindingWidget_GunCon2.ui
 	Settings/USBBindingWidget_RyojouhenCon.ui
 	Settings/USBBindingWidget_ShinkansenCon.ui
+	Tools/InputRecording/NewInputRecordingDlg.cpp
+	Tools/InputRecording/NewInputRecordingDlg.h
+	Tools/InputRecording/NewInputRecordingDlg.ui
+	Tools/InputRecording/InputRecordingViewer.cpp
+	Tools/InputRecording/InputRecordingViewer.h
+	Tools/InputRecording/InputRecordingViewer.ui
+	resources/resources.qrc
+)
+
+if(USE_DEBUGGER)
+	target_sources(pcsx2-qt PRIVATE
 	Debugger/AnalysisOptionsDialog.cpp
 	Debugger/AnalysisOptionsDialog.h
 	Debugger/AnalysisOptionsDialog.ui
@@ -236,15 +247,8 @@ target_sources(pcsx2-qt PRIVATE
 	Debugger/SymbolTree/SymbolTreeWidgets.h
 	Debugger/SymbolTree/SymbolTreeWidget.ui
 	Debugger/SymbolTree/TypeString.cpp
-	Debugger/SymbolTree/TypeString.h
-	Tools/InputRecording/NewInputRecordingDlg.cpp
-	Tools/InputRecording/NewInputRecordingDlg.h
-	Tools/InputRecording/NewInputRecordingDlg.ui
-	Tools/InputRecording/InputRecordingViewer.cpp
-	Tools/InputRecording/InputRecordingViewer.h
-	Tools/InputRecording/InputRecordingViewer.ui
-	resources/resources.qrc
-)
+	Debugger/SymbolTree/TypeString.h)
+endif()
 
 file(GLOB TS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Translations/*.ts)
 
@@ -264,8 +268,11 @@ target_link_libraries(pcsx2-qt PRIVATE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
-	KDAB::kddockwidgets
 )
+
+if(USE_DEBUGGER)
+	target_link_libraries(pcsx2-qt PRIVATE KDAB::kddockwidgets)
+endif()
 
 # Our Qt builds may have exceptions on, so force them off.
 target_compile_definitions(pcsx2-qt PRIVATE QT_NO_EXCEPTIONS)
