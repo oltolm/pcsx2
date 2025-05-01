@@ -19,6 +19,25 @@ find_package(LZ4 REQUIRED)
 find_package(WebP REQUIRED) # v1.3.2, spews an error on Linux because no pkg-config.
 find_package(SDL3 3.2.6 REQUIRED)
 find_package(Freetype 2.10 REQUIRED) # 2.10 is the first with COLRv0 support, which we need for rendering emoji
+
+include(FetchContent)
+
+FetchContent_Declare(
+	plutovg
+	GIT_REPOSITORY https://github.com/sammycage/plutovg.git
+	GIT_TAG v1.1.0
+	OVERRIDE_FIND_PACKAGE
+)
+
+FetchContent_Declare(
+	plutosvg
+	GIT_REPOSITORY https://github.com/sammycage/plutosvg.git
+	GIT_TAG v0.0.7
+	OVERRIDE_FIND_PACKAGE
+)
+
+FetchContent_MakeAvailable(plutovg plutosvg)
+
 find_package(plutovg 1.1.0 REQUIRED)
 find_package(plutosvg 0.0.7 REQUIRED)
 find_package(ryml REQUIRED)
@@ -112,6 +131,7 @@ if(ENABLE_QT_UI)
 		endif()
 	endif()
 
+if(USE_DEBUGGER)
 	# The docking system for the debugger.
 	find_package(KDDockWidgets-qt6 2.3.0 REQUIRED)
 endif()
