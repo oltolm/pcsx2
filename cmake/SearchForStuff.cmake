@@ -19,6 +19,22 @@ find_package(LZ4 REQUIRED)
 find_package(WebP REQUIRED) # v1.3.2, spews an error on Linux because no pkg-config.
 find_package(SDL3 3.2.6 REQUIRED)
 find_package(Freetype 2.12 REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+	plutovg
+	GIT_REPOSITORY https://github.com/sammycage/plutovg.git
+	GIT_TAG        v1.1.0
+	FIND_PACKAGE_ARGS
+)
+FetchContent_Declare(
+	plutosvg
+	GIT_REPOSITORY https://github.com/sammycage/plutosvg.git
+	GIT_TAG        v0.0.7
+	FIND_PACKAGE_ARGS
+)
+FetchContent_MakeAvailable(plutovg plutosvg)
+
 find_package(plutovg 1.1.0 REQUIRED)
 find_package(plutosvg 0.0.7 REQUIRED)
 
