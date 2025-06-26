@@ -77,7 +77,8 @@ namespace StringUtil
 	}
 
 	/// Wrapper around std::from_chars
-	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_integral_v<T>
 	inline std::optional<T> FromChars(const std::string_view str, int base = 10)
 	{
 		T value;
@@ -88,7 +89,8 @@ namespace StringUtil
 
 		return value;
 	}
-	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_integral_v<T>
 	inline std::optional<T> FromChars(const std::string_view str, int base, std::string_view* endptr)
 	{
 		T value;
@@ -105,7 +107,8 @@ namespace StringUtil
 		return value;
 	}
 
-	template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_floating_point_v<T>
 	inline std::optional<T> FromChars(const std::string_view str)
 	{
 		T value;
@@ -116,7 +119,8 @@ namespace StringUtil
 
 		return value;
 	}
-	template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_floating_point_v<T>
 	inline std::optional<T> FromChars(const std::string_view str, std::string_view* endptr)
 	{
 		T value;
@@ -134,7 +138,8 @@ namespace StringUtil
 	}
 
 	/// Wrapper around std::to_chars
-	template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_integral_v<T>
 	inline std::string ToChars(T value, int base = 10)
 	{
 		// to_chars() requires macOS 10.15+.
@@ -156,7 +161,8 @@ namespace StringUtil
 #endif
 	}
 
-	template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+	template <typename T>
+		requires std::is_floating_point_v<T>
 	inline std::string ToChars(T value)
 	{
 		// No to_chars() in older versions of libstdc++/libc++.
