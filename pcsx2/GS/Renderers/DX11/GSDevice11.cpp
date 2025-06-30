@@ -1880,7 +1880,7 @@ void GSDevice11::SetupOM(OMDepthStencilSelector dssel, OMBlendSelector bsel, u8 
 
 		memset(&bd, 0, sizeof(bd));
 
-		if (bsel.blend.IsEffective(bsel.colormask))
+		if (bsel.s.blend.IsEffective(bsel.s.colormask))
 		{
 			// clang-format off
 			static constexpr std::array<D3D11_BLEND, 16> s_d3d11_blend_factors = { {
@@ -1894,22 +1894,22 @@ void GSDevice11::SetupOM(OMDepthStencilSelector dssel, OMBlendSelector bsel, u8 
 			} };
 			// clang-format on
 
-			bd.RenderTarget[0].BlendEnable = bsel.blend.enable;
-			bd.RenderTarget[0].BlendOp = s_d3d11_blend_ops[bsel.blend.op];
-			bd.RenderTarget[0].SrcBlend = s_d3d11_blend_factors[bsel.blend.src_factor];
-			bd.RenderTarget[0].DestBlend = s_d3d11_blend_factors[bsel.blend.dst_factor];
+			bd.RenderTarget[0].BlendEnable = bsel.s.blend.enable;
+			bd.RenderTarget[0].BlendOp = s_d3d11_blend_ops[bsel.s.blend.op];
+			bd.RenderTarget[0].SrcBlend = s_d3d11_blend_factors[bsel.s.blend.src_factor];
+			bd.RenderTarget[0].DestBlend = s_d3d11_blend_factors[bsel.s.blend.dst_factor];
 			bd.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-			bd.RenderTarget[0].SrcBlendAlpha = s_d3d11_blend_factors[bsel.blend.src_factor_alpha];
-			bd.RenderTarget[0].DestBlendAlpha = s_d3d11_blend_factors[bsel.blend.dst_factor_alpha];
+			bd.RenderTarget[0].SrcBlendAlpha = s_d3d11_blend_factors[bsel.s.blend.src_factor_alpha];
+			bd.RenderTarget[0].DestBlendAlpha = s_d3d11_blend_factors[bsel.s.blend.dst_factor_alpha];
 		}
 
-		if (bsel.colormask.wr)
+		if (bsel.s.colormask.wr)
 			bd.RenderTarget[0].RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_RED;
-		if (bsel.colormask.wg)
+		if (bsel.s.colormask.wg)
 			bd.RenderTarget[0].RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_GREEN;
-		if (bsel.colormask.wb)
+		if (bsel.s.colormask.wb)
 			bd.RenderTarget[0].RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_BLUE;
-		if (bsel.colormask.wa)
+		if (bsel.s.colormask.wa)
 			bd.RenderTarget[0].RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_ALPHA;
 
 		Microsoft::WRL::ComPtr<ID3D11BlendState> bs;

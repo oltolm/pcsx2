@@ -37,15 +37,15 @@ public:
 			GSHWDrawConfig::ColorMaskSelector colormask;
 			u8 pad[3];
 			GSHWDrawConfig::BlendState blend;
-		};
+		} s;
 		u64 key;
 
 		constexpr OMBlendSelector() : key(0) {}
 		constexpr OMBlendSelector(GSHWDrawConfig::ColorMaskSelector colormask_, GSHWDrawConfig::BlendState blend_)
 		{
 			key = 0;
-			colormask = colormask_;
-			blend = blend_;
+			s.colormask = colormask_;
+			s.blend = blend_;
 		}
 	};
 	static_assert(sizeof(OMBlendSelector) == sizeof(u64));
