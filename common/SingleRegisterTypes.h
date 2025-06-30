@@ -21,8 +21,13 @@
 using r128 = __m128i;
 
 // Calling convention setting, yay
+#if defined(__GNUC__) && !defined(__clang__)
+#define RETURNS_R128 r128
+#define TAKES_R128
+#else
 #define RETURNS_R128 r128 __vectorcall
 #define TAKES_R128 __vectorcall
+#endif
 
 // And since we can't stick them in structs, we get lots of static methods, yay!
 [[maybe_unused]] __fi static r128 r128_load(const void* ptr)
