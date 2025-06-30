@@ -260,7 +260,7 @@ public:
 		assign(move);
 	}
 
-	__fi SmallStackString(const SmallStackString& copy)
+	__fi SmallStackString(const SmallStackString& copy) : SmallStringBase()
 	{
 		init();
 		assign(copy);
