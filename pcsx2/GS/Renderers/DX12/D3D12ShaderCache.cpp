@@ -294,7 +294,7 @@ D3D12ShaderCache::CacheIndexKey D3D12ShaderCache::GetShaderCacheKey(
 		{
 			u64 hash_low;
 			u64 hash_high;
-		};
+		} u;
 		u8 hash[16];
 	};
 
@@ -304,8 +304,8 @@ D3D12ShaderCache::CacheIndexKey D3D12ShaderCache::GetShaderCacheKey(
 	MD5Digest digest;
 	digest.Update(shader_code.data(), static_cast<u32>(shader_code.length()));
 	digest.Final(hash);
-	key.source_hash_low = hash_low;
-	key.source_hash_high = hash_high;
+	key.source_hash_low = u.hash_low;
+	key.source_hash_high = u.hash_high;
 	key.source_length = static_cast<u32>(shader_code.length());
 
 	if (macros)
@@ -317,15 +317,15 @@ D3D12ShaderCache::CacheIndexKey D3D12ShaderCache::GetShaderCacheKey(
 			digest.Update(macro->Definition, std::strlen(macro->Definition));
 		}
 		digest.Final(hash);
-		key.macro_hash_low = hash_low;
-		key.macro_hash_high = hash_high;
+		key.macro_hash_low = u.hash_low;
+		key.macro_hash_high = u.hash_high;
 	}
 
 	digest.Reset();
 	digest.Update(entry_point, static_cast<u32>(std::strlen(entry_point)));
 	digest.Final(hash);
-	key.entry_point_low = hash_low;
-	key.entry_point_high = hash_high;
+	key.entry_point_low = u.hash_low;
+	key.entry_point_high = u.hash_high;
 
 	return key;
 }
