@@ -32,7 +32,7 @@ namespace StringUtil
 		std::va_list ap_copy;
 		va_copy(ap_copy, ap);
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 		int len = _vscprintf(format, ap_copy);
 #else
 		int len = std::vsnprintf(nullptr, 0, format, ap_copy);

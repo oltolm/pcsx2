@@ -38,8 +38,10 @@
 namespace StringUtil
 {
 	/// Constructs a std::string from a format string.
-#ifdef __GNUC__
+#if defined(__GNUC__) && defined(__clang__)
 	std::string StdStringFromFormat(const char* format, ...) __attribute__((format(printf, 1, 2)));
+#elif defined(__GNUC__)
+	std::string StdStringFromFormat(const char* format, ...) __attribute__((format(gnu_printf, 1, 2)));
 #else
 	std::string StdStringFromFormat(const char* format, ...);
 #endif

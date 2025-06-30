@@ -25,3 +25,7 @@ target_link_libraries(demangler_fuzzer demanglegnu)
 target_link_libraries(demangler_test demanglegnu)
 target_compile_definitions(demangler_fuzzer PUBLIC ${GNU_DEMANGLER_FLAGS})
 target_compile_definitions(demangler_test PUBLIC ${GNU_DEMANGLER_FLAGS})
+
+if(MINGW)
+	target_compile_definitions(demanglegnu PRIVATE HAVE_DECL_GETOPT)
+endif()
