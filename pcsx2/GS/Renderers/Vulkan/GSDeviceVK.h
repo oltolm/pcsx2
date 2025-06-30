@@ -324,7 +324,7 @@ public:
 		__fi bool operator==(const PipelineSelector& p) const { return BitEqual(*this, p); }
 		__fi bool operator!=(const PipelineSelector& p) const { return !BitEqual(*this, p); }
 
-		__fi PipelineSelector() { std::memset(this, 0, sizeof(*this)); }
+		__fi PipelineSelector() { std::memset((void*)this, 0, sizeof(*this)); }
 
 		__fi bool IsRTFeedbackLoop() const { return ((feedback_loop_flags & FeedbackLoopFlag_ReadAndWriteRT) != 0); }
 		__fi bool IsTestingAndSamplingDepth() const { return ((feedback_loop_flags & FeedbackLoopFlag_ReadDS) != 0); }
