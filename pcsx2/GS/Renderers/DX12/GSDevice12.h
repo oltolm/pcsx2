@@ -205,7 +205,7 @@ public:
 		__fi bool operator==(const PipelineSelector& p) const { return BitEqual(*this, p); }
 		__fi bool operator!=(const PipelineSelector& p) const { return !BitEqual(*this, p); }
 
-		__fi PipelineSelector() { std::memset(this, 0, sizeof(*this)); }
+		__fi PipelineSelector() { std::memset((void*)this, 0, sizeof(*this)); }
 	};
 	static_assert(sizeof(PipelineSelector) == 24, "Pipeline selector is 24 bytes");
 

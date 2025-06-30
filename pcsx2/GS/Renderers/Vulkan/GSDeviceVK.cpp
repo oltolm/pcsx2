@@ -92,7 +92,7 @@ GSDeviceVK::GSDeviceVK()
 	s_debug_scope_depth = 0;
 #endif
 
-	std::memset(&m_pipeline_selector, 0, sizeof(m_pipeline_selector));
+	std::memset((void*)&m_pipeline_selector, 0, sizeof(m_pipeline_selector));
 }
 
 GSDeviceVK::~GSDeviceVK() = default;
