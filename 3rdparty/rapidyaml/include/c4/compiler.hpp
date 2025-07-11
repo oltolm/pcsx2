@@ -86,6 +86,9 @@
 #           define C4_XCODE_VERSION __APPLE_CC__
 #       endif
 #   elif defined(__clang__)
+#       ifdef __MINGW32__
+#           define C4_MINGW
+#       endif
 #       define C4_CLANG
 #       ifndef __apple_build_version__
 #           define C4_CLANG_VERSION C4_VERSION_ENCODED(__clang_major__, __clang_minor__, __clang_patchlevel__)
