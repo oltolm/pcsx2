@@ -1071,7 +1071,7 @@ void SaveStateSelectorUI::InitializeListEntry(const std::string& serial, u32 crc
 	li->title = fmt::format(TRANSLATE_FS("ImGuiOverlays", "Save Slot {0}"), slot);
 
 	std::tm tm_local = {};
-#ifdef _MSC_VER
+#ifdef _WIN32
 	localtime_s(&tm_local, &sd.ModificationTime);
 #else
 	localtime_r(&sd.ModificationTime, &tm_local);
@@ -1277,7 +1277,7 @@ void SaveStateSelectorUI::ShowSlotOSDMessage()
 	std::string date;
 	
 	std::tm tm_local = {};
-#ifdef _MSC_VER
+#ifdef _WIN32
 	localtime_s(&tm_local, &sd.ModificationTime);
 #else
 	localtime_r(&sd.ModificationTime, &tm_local);
