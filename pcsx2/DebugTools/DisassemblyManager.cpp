@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2002-2025 PCSX2 Dev Team
 // SPDX-License-Identifier: GPL-3.0+
 
+#include <memory>
 #include <string>
 #include <algorithm>
 #include <map>
+#include <utility>
 
 #include "DisassemblyManager.h"
 #include "Memory.h"
@@ -90,7 +92,7 @@ static void parseDisasm(SymbolGuardian& guardian, const char* disasm, char* opco
 	*arguments = 0;
 }
 
-std::map<u32,DisassemblyEntry*>::iterator findDisassemblyEntry(std::map<u32,DisassemblyEntry*>& entries, u32 address, bool exact)
+std::map<u32,std::unique_ptr<DisassemblyEntry>>::iterator findDisassemblyEntry(std::map<u32,std::unique_ptr<DisassemblyEntry>>& entries, u32 address, bool exact)
 {
 	if (exact)
 		return entries.find(address);
@@ -141,7 +143,7 @@ void DisassemblyManager::analyze(u32 address, u32 size = 1024)
 		auto it = findDisassemblyEntry(entries,address,false);
 		if (it != entries.end())
 		{
-			DisassemblyEntry* entry = it->second;
+			auto& entry = it->second;
 			entry->recheck();
 			address = entry->getLineAddress(0)+entry->getTotalSize();
 			continue;
@@ -156,22 +158,22 @@ void DisassemblyManager::analyze(u32 address, u32 size = 1024)
 			{
 				case ccc::SymbolDescriptor::FUNCTION:
 				{
-					DisassemblyFunction* function = new DisassemblyFunction(cpu,info.address.value,info.size);
-					entries[info.address.value] = function;
+					auto function = std::make_unique<DisassemblyFunction>(cpu,info.address.value,info.size);
+					entries[info.address.value] = std::move(function);
 					address = info.address.value + info.size;
 					break;
 				}
 				case ccc::SymbolDescriptor::GLOBAL_VARIABLE:
 				{
-					DisassemblyData* data = new DisassemblyData(cpu,info.address.value,info.size,DATATYPE_WORD);
-					entries[info.address.value] = data;
+					auto data = std::make_unique<DisassemblyData>(cpu,info.address.value,info.size,DATATYPE_WORD);
+					entries[info.address.value] = std::move(data);
 					address = info.address.value+info.size;
 					break;
 				}
 				case ccc::SymbolDescriptor::LOCAL_VARIABLE:
 				{
-					DisassemblyData* data = new DisassemblyData(cpu,info.address.value,info.size,DATATYPE_WORD);
-					entries[info.address.value] = data;
+					auto data = std::make_unique<DisassemblyData>(cpu,info.address.value,info.size,DATATYPE_WORD);
+					entries[info.address.value] = std::move(data);
 					address = info.address.value+info.size;
 					break;
 				}
@@ -183,8 +185,8 @@ void DisassemblyManager::analyze(u32 address, u32 size = 1024)
 			{
 				u32 next = std::min<u32>((address+3) & ~3,cpu->GetSymbolGuardian().SymbolAfterAddress(
 					address, ccc::FUNCTION | ccc::GLOBAL_VARIABLE | ccc::LOCAL_VARIABLE).address.value);
-				DisassemblyData* data = new DisassemblyData(cpu,address,next-address,DATATYPE_BYTE);
-				entries[address] = data;
+				auto data = std::make_unique<DisassemblyData>(cpu,address,next-address,DATATYPE_BYTE);
+				entries[address] = std::move(data);
 				address = next;
 				continue;
 			}
@@ -198,15 +200,15 @@ void DisassemblyManager::analyze(u32 address, u32 size = 1024)
 
 				if (alignedNext != address)
 				{
-					DisassemblyOpcode* opcode = new DisassemblyOpcode(cpu,address,(alignedNext-address)/4);
-					entries[address] = opcode;
+					auto opcode = std::make_unique<DisassemblyOpcode>(cpu,address,(alignedNext-address)/4);
+					entries[address] = std::move(opcode);
 				}
 
-				DisassemblyData* data = new DisassemblyData(cpu,address,next-alignedNext,DATATYPE_BYTE);
-				entries[alignedNext] = data;
+				auto data = std::make_unique<DisassemblyData>(cpu,address,next-alignedNext,DATATYPE_BYTE);
+				entries[alignedNext] = std::move(data);
 			} else {
-				DisassemblyOpcode* opcode = new DisassemblyOpcode(cpu,address,(next-address)/4);
-				entries[address] = opcode;
+				auto opcode = std::make_unique<DisassemblyOpcode>(cpu,address,(next-address)/4);
+				entries[address] = std::move(opcode);
 			}
 
 			address = next;
@@ -253,7 +255,7 @@ void DisassemblyManager::getLine(u32 address, bool insertSymbols, DisassemblyLin
 		}
 	}
 
-	DisassemblyEntry* entry = it->second;
+	auto& entry = it->second;
 	if (entry->disassemble(address,dest,insertSymbols))
 		return;
 
@@ -276,7 +278,7 @@ u32 DisassemblyManager::getStartAddress(u32 address)
 			return address;
 	}
 
-	DisassemblyEntry* entry = it->second;
+	auto& entry = it->second;
 	int line = entry->getLineNum(address,true);
 	return entry->getLineAddress(line);
 }
@@ -289,7 +291,7 @@ u32 DisassemblyManager::getNthPreviousAddress(u32 address, int n)
 
 		while (it != entries.end())
 		{
-			DisassemblyEntry* entry = it->second;
+			auto& entry = it->second;
 			int oldLineNum = entry->getLineNum(address,true);
 			if (n <= oldLineNum)
 			{
@@ -318,7 +320,7 @@ u32 DisassemblyManager::getNthNextAddress(u32 address, int n)
 
 		while (it != entries.end())
 		{
-			DisassemblyEntry* entry = it->second;
+			auto& entry = it->second;
 			int oldLineNum = entry->getLineNum(address,true);
 			int oldNumLines = entry->getNumLines();
 			if (oldLineNum+n < oldNumLines)
@@ -342,10 +344,6 @@ u32 DisassemblyManager::getNthNextAddress(u32 address, int n)
 
 void DisassemblyManager::clear()
 {
-	for (auto it = entries.begin(); it != entries.end(); it++)
-	{
-		delete it->second;
-	}
 	entries.clear();
 }
 
@@ -510,8 +508,8 @@ void DisassemblyFunction::generateBranchLines()
 
 void DisassemblyFunction::addOpcodeSequence(u32 start, u32 end)
 {
-	DisassemblyOpcode* opcode = new DisassemblyOpcode(cpu,start,(end-start)/4);
-	entries[start] = opcode;
+	auto opcode = std::make_unique<DisassemblyOpcode>(cpu,start,(end-start)/4);
+	entries[start] = std::move(opcode);
 	for (u32 pos = start; pos < end; pos += 4)
 	{
 		lineAddresses.push_back(pos);
@@ -550,8 +548,8 @@ void DisassemblyFunction::load()
 			if (opcodeSequenceStart != funcPos)
 				addOpcodeSequence(opcodeSequenceStart,funcPos);
 
-			DisassemblyData* data = new DisassemblyData(cpu,funcPos,nextData.size,DATATYPE_WORD);
-			entries[funcPos] = data;
+			auto data = std::make_unique<DisassemblyData>(cpu,funcPos,nextData.size,DATATYPE_WORD);
+			entries[funcPos] = std::move(data);
 			lineAddresses.push_back(funcPos);
 			funcPos += data->getTotalSize();
 
@@ -566,8 +564,8 @@ void DisassemblyFunction::load()
 		{
 			u32 nextPos = (funcPos+3) & ~3;
 
-			DisassemblyComment* comment = new DisassemblyComment(cpu,funcPos,nextPos-funcPos,".align","4");
-			entries[funcPos] = comment;
+			auto comment = std::make_unique<DisassemblyComment>(cpu,funcPos,nextPos-funcPos,".align","4");
+			entries[funcPos] = std::move(comment);
 			lineAddresses.push_back(funcPos);
 
 			funcPos = nextPos;
@@ -703,11 +701,6 @@ void DisassemblyFunction::load()
 
 void DisassemblyFunction::clear()
 {
-	for (auto it = entries.begin(); it != entries.end(); it++)
-	{
-		delete it->second;
-	}
-
 	entries.clear();
 	lines.clear();
 	lineAddresses.clear();
