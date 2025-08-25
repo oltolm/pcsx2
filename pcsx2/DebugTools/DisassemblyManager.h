@@ -6,6 +6,7 @@
 #include "SymbolGuardian.h"
 #include "common/Threading.h"
 #include "common/Pcsx2Types.h"
+#include <memory>
 #include "DebugInterface.h"
 #include "MIPSAnalyst.h"
 
@@ -72,7 +73,7 @@ private:
 	u32 size;
 	u32 hash;
 	std::vector<BranchLine> lines;
-	std::map<u32,DisassemblyEntry*> entries;
+	std::map<u32,std::unique_ptr<DisassemblyEntry>> entries;
 	std::vector<u32> lineAddresses;
 };
 
@@ -203,7 +204,7 @@ public:
 	static int getMaxParamChars() { return maxParamChars; };
 private:
 	DisassemblyEntry* getEntry(u32 address);
-	std::map<u32,DisassemblyEntry*> entries;
+	std::map<u32,std::unique_ptr<DisassemblyEntry>> entries;
 	DebugInterface* cpu = NULL;
 	static int maxParamChars;
 };
