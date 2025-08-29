@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "Common.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "R5900OpcodeTables.h"
 #include "VU.h"
 #include "VUmicro.h"
