@@ -7,7 +7,7 @@
 #include "Elfheader.h"
 #include "GS.h"
 #include "Host.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "Patch.h"
 #include "R3000A.h"
 #include "R5900OpcodeTables.h"
