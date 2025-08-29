@@ -1,0 +1,13 @@
+---
+Diagnostics:
+  ClangTidy:
+    Add:
+      - performance-*
+      - readability-non-const-parameter
+      - modernize-loop-convert
+    Remove:
+      - performance-no-int-to-ptr
+      - performance-enum-size
+    CheckOptions:
+      performance-unnecessary-value-param.AllowedTypes: std::shared_ptr,std::function
+...
