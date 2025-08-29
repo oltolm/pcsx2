@@ -10,7 +10,7 @@ static const u32 PS2CLK = 294912000;	//hz	/* 294.912 mhz */
 extern u32 PSXCLK;	/* 36.864 Mhz */
 
 
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "R5900.h"
 #include "Hw.h"
 #include "Dmac.h"

@@ -4,7 +4,7 @@
 #include "BuildVersion.h"
 #include "Common.h"
 #include "Host.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "Elfheader.h"
 #include "SaveState.h"
 #include "PINE.h"
