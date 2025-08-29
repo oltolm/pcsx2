@@ -880,7 +880,7 @@
     <ClInclude Include="Hw.h" />
     <ClInclude Include="ps2\HwInternal.h" />
     <ClInclude Include="Cache.h" />
-    <ClInclude Include="Memory.h" />
+    <ClInclude Include="PCSX2Memory.h" />
     <ClInclude Include="Vif_Dynarec.h" />
     <ClInclude Include="Vif_HashBucket.h" />
     <ClInclude Include="VMManager.h" />

@@ -5,7 +5,7 @@
 
 #include "common/Console.h"
 #include "Config.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 
 #include <string>
 

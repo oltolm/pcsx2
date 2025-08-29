@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "DisassemblyManager.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "common/StringUtil.h"
 #include "MIPSAnalyst.h"
 
