@@ -3,7 +3,7 @@
 
 #include "BiosDebugData.h"
 #include "IopMem.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "VMManager.h"
 
 std::vector<std::unique_ptr<BiosThread>> getEEThreads()

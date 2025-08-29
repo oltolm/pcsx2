@@ -1490,7 +1490,7 @@
     <ClInclude Include="Cache.h">
       <Filter>System\Ps2\EmotionEngine\Memory</Filter>
     </ClInclude>
-    <ClInclude Include="Memory.h">
+    <ClInclude Include="PCSX2Memory.h">
       <Filter>System\Ps2\EmotionEngine\Memory</Filter>
     </ClInclude>
     <ClInclude Include="vtlb.h">

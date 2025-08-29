@@ -16,7 +16,7 @@
 #include "GameDatabase.h"
 #include "Host.h"
 #include "IopMem.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "Patch.h"
 #include "R5900.h"
 
