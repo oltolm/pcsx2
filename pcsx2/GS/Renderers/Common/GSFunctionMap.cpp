@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "GS/Renderers/Common/GSFunctionMap.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 
 namespace GSCodeReserve
 {

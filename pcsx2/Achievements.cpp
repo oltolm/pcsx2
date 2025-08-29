@@ -12,7 +12,7 @@
 #include "ImGui/ImGuiManager.h"
 #include "IopMem.h"
 #include "MTGS.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "SaveState.h"
 #include "VMManager.h"
 #include "vtlb.h"

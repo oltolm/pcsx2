@@ -170,7 +170,7 @@ set(pcsx2Headers
 	Mdec.h
 	MTGS.h
 	MTVU.h
-	Memory.h
+	PCSX2Memory.h
 	MemoryTypes.h
 	Patch.h
 	PerformanceMetrics.h
