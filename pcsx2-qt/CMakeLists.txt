@@ -295,6 +295,7 @@ target_link_libraries(pcsx2-qt PRIVATE
 
 if(USE_DEBUGGER)
 	target_link_libraries(pcsx2-qt PRIVATE KDAB::kddockwidgets)
+	target_compile_definitions(pcsx2-qt PRIVATE USE_DEBUGGER)
 endif()
 
 # Our Qt builds may have exceptions on, so force them off.
