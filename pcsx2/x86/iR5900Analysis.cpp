@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "iR5900Analysis.h"
-#include "Memory.h"
+#include "PCSX2Memory.h"
 #include "DebugTools/Debug.h"
 
 using namespace R5900;
