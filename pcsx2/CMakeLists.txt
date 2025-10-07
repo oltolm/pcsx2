@@ -1190,6 +1190,7 @@ if(WIN32)
 		Winhttp.lib
 		Version.lib
 		Pathcch.lib
+		avrt.lib
 	)
 else()
 	target_link_libraries(PCSX2_FLAGS INTERFACE
