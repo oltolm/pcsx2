@@ -7,6 +7,7 @@
 #include "common/Assertions.h"
 #include "common/Console.h"
 #include "common/Error.h"
+#include "common/ScopedGuard.h"
 
 #include "cubeb/cubeb.h"
 #include "fmt/format.h"
@@ -15,7 +16,6 @@
 #include "common/RedtapeWindows.h"
 #include <objbase.h>
 
-#include "wil/resource.h"
 #endif
 
 // Since the context gets used to populate the device list, that unfortunately means
@@ -46,7 +46,7 @@ static cubeb* GetCubebContext(const char* backend = nullptr)
 		Console.ErrorFmt("CoInitializeEx failed: {}", Error::CreateHResult(hr).GetDescription());
 		return nullptr;
 	}
-	wil::unique_couninitialize_call uninit;
+	ScopedGuard uninit([](){ CoUninitialize(); });
 #endif
 
 	if (!s_cubeb_context)
@@ -68,7 +68,7 @@ static cubeb* GetCubebContext(const char* backend = nullptr)
 
 #ifdef _WIN32
 	// ReleaseCubebContext will call CoUninitialize
-	uninit.release();
+	uninit.Cancel();
 #endif
 
 	return s_cubeb_context;

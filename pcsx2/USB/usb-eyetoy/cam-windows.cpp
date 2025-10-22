@@ -537,7 +537,6 @@ namespace usb_eyetoy
 				return -1;
 			}
 
-			dshowCoInitialize = std::move(uninit);
 			return 0;
 		};
 

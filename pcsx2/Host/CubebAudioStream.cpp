@@ -19,7 +19,6 @@
 #include "common/RedtapeWindows.h"
 #include <objbase.h>
 
-#include "wil/resource.h"
 #endif
 
 namespace
@@ -44,7 +43,7 @@ namespace
 
 #ifdef _WIN32
 		// Keep it as the first field, as COM must uninitialize last.
-		wil::unique_couninitialize_call m_coUninit{false};
+		// wil::unique_couninitialize_call m_coUninit{false};
 #endif
 
 		cubeb* m_context = nullptr;
@@ -85,6 +84,7 @@ CubebAudioStream::CubebAudioStream(u32 sample_rate, const AudioStreamParameters&
 
 CubebAudioStream::~CubebAudioStream()
 {
+	CoUninitialize();
 	DestroyContextAndStream();
 }
 
@@ -113,7 +113,7 @@ void CubebAudioStream::DestroyContextAndStream()
 		m_context = nullptr;
 	}
 #ifdef _WIN32
-	m_coUninit.reset();
+	// m_coUninit.reset();
 #endif
 }
 
@@ -128,7 +128,7 @@ bool CubebAudioStream::Initialize(const char* driver_name, const char* device_na
 		Error::SetHResult(error, "CoInitializeEx() failed: ", hr);
 		return false;
 	}
-	wil::unique_couninitialize_call uninit;
+	ScopedGuard uninit([](){ CoUninitialize(); });
 #endif
 
 	int rv = cubeb_init(&m_context, "PCSX2", (driver_name && *driver_name) ? driver_name : nullptr);
@@ -265,7 +265,7 @@ bool CubebAudioStream::Initialize(const char* driver_name, const char* device_na
 	}
 
 #ifdef _WIN32
-	m_coUninit = std::move(uninit);
+	uninit.Cancel();
 #endif
 	return true;
 }
@@ -337,7 +337,7 @@ std::vector<AudioStream::DeviceInfo> AudioStream::GetCubebOutputDevices(const ch
 		ERROR_LOG("CoInitializeEx failed: {}", Error::CreateHResult(hr).GetDescription());
 		return ret;
 	}
-	wil::unique_couninitialize_call uninit;
+	ScopedGuard uninit([](){ CoUninitialize(); });
 #endif
 
 	cubeb* context;
