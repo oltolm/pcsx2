@@ -1,0 +1,6 @@
+---
+Checks:          '-*,modernize-loop-convert'
+FormatStyle: file
+CheckOptions:
+  modernize-loop-convert.UseCxx20ReverseRanges: false
+...
