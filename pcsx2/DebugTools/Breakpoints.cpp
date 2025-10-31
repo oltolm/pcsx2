@@ -422,10 +422,9 @@ void CBreakPoints::ClearSkipFirst()
 const std::vector<MemCheck> CBreakPoints::GetMemCheckRanges()
 {
 	std::vector<MemCheck> ranges = memChecks_;
-	for (auto it = memChecks_.begin(), end = memChecks_.end(); it != end; ++it)
+	for (auto check : memChecks_)
 	{
-		MemCheck check = *it;
-		// Toggle the cached part of the address.
+			// Toggle the cached part of the address.
 		check.start ^= 0x40000000;
 		if (check.end != 0)
 			check.end ^= 0x40000000;

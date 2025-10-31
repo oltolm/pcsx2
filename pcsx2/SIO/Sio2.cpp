@@ -29,9 +29,9 @@ bool Sio2::Initialize()
 {
 	this->SoftReset();
 
-	for (size_t i = 0; i < send3.size(); i++)
+	for (unsigned int & i : send3)
 	{
-		send3[i] = 0;
+		i = 0;
 	}
 
 	for (size_t i = 0; i < send1.size(); i++)

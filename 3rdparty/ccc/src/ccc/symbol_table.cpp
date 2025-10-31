@@ -19,9 +19,9 @@ const std::vector<SymbolTableFormatInfo> SYMBOL_TABLE_FORMATS = {
 
 const SymbolTableFormatInfo* symbol_table_format_from_enum(SymbolTableFormat format)
 {
-	for(size_t i = 0; i < SYMBOL_TABLE_FORMATS.size(); i++) {
-		if(SYMBOL_TABLE_FORMATS[i].format == format) {
-			return &SYMBOL_TABLE_FORMATS[i];
+	for(const auto & i : SYMBOL_TABLE_FORMATS) {
+		if(i.format == format) {
+			return &i;
 		}
 	}
 	return nullptr;
@@ -29,9 +29,9 @@ const SymbolTableFormatInfo* symbol_table_format_from_enum(SymbolTableFormat for
 
 const SymbolTableFormatInfo* symbol_table_format_from_name(const char* format_name)
 {
-	for(size_t i = 0; i < SYMBOL_TABLE_FORMATS.size(); i++) {
-		if(strcmp(SYMBOL_TABLE_FORMATS[i].format_name, format_name) == 0) {
-			return &SYMBOL_TABLE_FORMATS[i];
+	for(const auto & i : SYMBOL_TABLE_FORMATS) {
+		if(strcmp(i.format_name, format_name) == 0) {
+			return &i;
 		}
 	}
 	return nullptr;
@@ -39,9 +39,9 @@ const SymbolTableFormatInfo* symbol_table_format_from_name(const char* format_na
 
 const SymbolTableFormatInfo* symbol_table_format_from_section(const char* section_name)
 {
-	for(size_t i = 0; i < SYMBOL_TABLE_FORMATS.size(); i++) {
-		if(strcmp(SYMBOL_TABLE_FORMATS[i].section_name, section_name) == 0) {
-			return &SYMBOL_TABLE_FORMATS[i];
+	for(const auto & i : SYMBOL_TABLE_FORMATS) {
+		if(strcmp(i.section_name, section_name) == 0) {
+			return &i;
 		}
 	}
 	return nullptr;

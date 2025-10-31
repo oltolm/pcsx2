@@ -41,6 +41,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -3217,8 +3218,8 @@ void Achievements::CloseLeaderboard()
 {
 	s_leaderboard_user_icon_paths.clear();
 
-	for (auto iter = s_leaderboard_entry_lists.rbegin(); iter != s_leaderboard_entry_lists.rend(); ++iter)
-		rc_client_destroy_leaderboard_entry_list(*iter);
+	for (auto & s_leaderboard_entry_list : std::ranges::reverse_view(s_leaderboard_entry_lists))
+		rc_client_destroy_leaderboard_entry_list(s_leaderboard_entry_list);
 	s_leaderboard_entry_lists.clear();
 
 	if (s_leaderboard_nearby_entries)

@@ -169,8 +169,8 @@ void Tree::_clear()
     m_free_tail = 0;
     m_arena = {};
     m_arena_pos = 0;
-    for(id_type i = 0; i < RYML_MAX_TAG_DIRECTIVES; ++i)
-        m_tag_directives[i] = {};
+    for(auto & m_tag_directive : m_tag_directives)
+        m_tag_directive = {};
 }
 
 void Tree::_copy(Tree const& that)
@@ -305,8 +305,8 @@ void Tree::clear()
         m_free_head = NONE;
         m_free_tail = NONE;
     }
-    for(id_type i = 0; i < RYML_MAX_TAG_DIRECTIVES; ++i)
-        m_tag_directives[i] = {};
+    for(auto & m_tag_directive : m_tag_directives)
+        m_tag_directive = {};
 }
 
 void Tree::_claim_root()

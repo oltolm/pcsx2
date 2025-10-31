@@ -4096,9 +4096,9 @@ void BlockMetadata_Linear::DebugLogAllAllocations() const
             DebugLogAllocation(it->offset, it->size, it->privateData);
 
     const SuballocationVectorType& suballocations2nd = AccessSuballocations2nd();
-    for (auto it = suballocations2nd.begin(); it != suballocations2nd.end(); ++it)
-        if (it->type != SUBALLOCATION_TYPE_FREE)
-            DebugLogAllocation(it->offset, it->size, it->privateData);
+    for (const auto & it : suballocations2nd)
+        if (it.type != SUBALLOCATION_TYPE_FREE)
+            DebugLogAllocation(it.offset, it.size, it.privateData);
 }
 
 Suballocation& BlockMetadata_Linear::FindSuballocation(UINT64 offset) const
@@ -6704,10 +6704,10 @@ void AllocatorPimpl::SetCurrentFrameIndex(UINT frameIndex)
 void AllocatorPimpl::CalculateStatistics(TotalStatistics& outStats, DetailedStatistics outCustomHeaps[2])
 {
     // Init stats
-    for (size_t i = 0; i < HEAP_TYPE_COUNT; i++)
-        ClearDetailedStatistics(outStats.HeapType[i]);
-    for (size_t i = 0; i < DXGI_MEMORY_SEGMENT_GROUP_COUNT; i++)
-        ClearDetailedStatistics(outStats.MemorySegmentGroup[i]);
+    for (auto & i : outStats.HeapType)
+        ClearDetailedStatistics(i);
+    for (auto & i : outStats.MemorySegmentGroup)
+        ClearDetailedStatistics(i);
     ClearDetailedStatistics(outStats.Total);
     if (outCustomHeaps)
     {
@@ -8269,9 +8269,8 @@ void BlockVector::AddStatistics(Statistics& inoutStats)
 {
     MutexLockRead lock(m_Mutex, m_hAllocator->UseMutex());
 
-    for (size_t i = 0; i < m_Blocks.size(); ++i)
+    for (auto pBlock : m_Blocks)
     {
-        const NormalBlock* const pBlock = m_Blocks[i];
         D3D12MA_ASSERT(pBlock);
         D3D12MA_HEAVY_ASSERT(pBlock->Validate());
         pBlock->m_pMetadata->AddStatistics(inoutStats);
@@ -8282,9 +8281,8 @@ void BlockVector::AddDetailedStatistics(DetailedStatistics& inoutStats)
 {
     MutexLockRead lock(m_Mutex, m_hAllocator->UseMutex());
 
-    for (size_t i = 0; i < m_Blocks.size(); ++i)
+    for (auto pBlock : m_Blocks)
     {
-        const NormalBlock* const pBlock = m_Blocks[i];
         D3D12MA_ASSERT(pBlock);
         D3D12MA_HEAVY_ASSERT(pBlock->Validate());
         pBlock->m_pMetadata->AddDetailedStatistics(inoutStats);
@@ -8297,9 +8295,8 @@ void BlockVector::WriteBlockInfoToJson(JsonWriter& json)
 
     json.BeginObject();
 
-    for (size_t i = 0, count = m_Blocks.size(); i < count; ++i)
+    for (auto pBlock : m_Blocks)
     {
-        const NormalBlock* const pBlock = m_Blocks[i];
         D3D12MA_ASSERT(pBlock);
         D3D12MA_HEAVY_ASSERT(pBlock->Validate());
         json.BeginString();
@@ -8413,9 +8410,8 @@ HRESULT BlockVector::AllocatePage(
     // 1. Search existing allocations
     {
         // Forward order in m_Blocks - prefer blocks with smallest amount of free space.
-        for (size_t blockIndex = 0; blockIndex < m_Blocks.size(); ++blockIndex)
+        for (auto pCurrBlock : m_Blocks)
         {
-            NormalBlock* const pCurrBlock = m_Blocks[blockIndex];
             D3D12MA_ASSERT(pCurrBlock);
             HRESULT hr = AllocateFromBlock(
                 pCurrBlock,
@@ -8676,8 +8672,8 @@ HRESULT DefragmentationContextPimpl::DefragmentPassBegin(DEFRAGMENTATION_PASS_MO
             ReallocWithinBlock(*m_PoolBlockVector, m_PoolBlockVector->GetBlock(0));
 
         // Setup index into block vector
-        for (size_t i = 0; i < m_Moves.size(); ++i)
-            m_Moves[i].pDstTmpAllocation->SetPrivateData(0);
+        for (auto & m_Move : m_Moves)
+            m_Move.pDstTmpAllocation->SetPrivateData(0);
     }
     else
     {

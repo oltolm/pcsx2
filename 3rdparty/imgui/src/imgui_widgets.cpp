@@ -9812,10 +9812,10 @@ static void ImGui::TabBarLayout(ImGuiTabBar* tab_bar)
     // Compute total ideal width (used for e.g. auto-resizing a window)
     float width_all_tabs_after_min_width_shrink = 0.0f;
     tab_bar->WidthAllTabsIdeal = 0.0f;
-    for (int section_n = 0; section_n < 3; section_n++)
+    for (auto & section : sections)
     {
-        tab_bar->WidthAllTabsIdeal += sections[section_n].Width + sections[section_n].Spacing;
-        width_all_tabs_after_min_width_shrink += sections[section_n].WidthAfterShrinkMinWidth + sections[section_n].Spacing;
+        tab_bar->WidthAllTabsIdeal += section.Width + section.Spacing;
+        width_all_tabs_after_min_width_shrink += section.WidthAfterShrinkMinWidth + section.Spacing;
     }
 
     // Horizontal scrolling buttons

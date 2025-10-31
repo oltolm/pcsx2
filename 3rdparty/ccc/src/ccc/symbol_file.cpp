@@ -50,10 +50,8 @@ Result<std::vector<std::unique_ptr<SymbolTable>>> ElfSymbolFile::get_all_symbol_
 	
 	symbol_tables.emplace_back(std::make_unique<ElfSectionHeadersSymbolTable>(m_elf));
 	
-	for(size_t i = 0; i < SYMBOL_TABLE_FORMATS.size(); i++) {
-		const SymbolTableFormatInfo& info = SYMBOL_TABLE_FORMATS[i];
-		
-		const ElfSection* section = m_elf.lookup_section(info.section_name);
+	for(const auto & info : SYMBOL_TABLE_FORMATS) {
+			const ElfSection* section = m_elf.lookup_section(info.section_name);
 		if(section) {
 			Result<std::unique_ptr<SymbolTable>> symbol_table = create_elf_symbol_table(*section, m_elf, info.format);
 			CCC_RETURN_IF_ERROR(symbol_table);

@@ -2884,8 +2884,8 @@ void FullscreenUI::DrawStringListSetting(SettingsInterface* bsi, const char* tit
 		cd_options.reserve(raw_options.size() + 1);
 		if (game_settings)
 			cd_options.emplace_back(FSUI_STR("Use Global Setting"), !value.has_value());
-		for (size_t i = 0; i < raw_options.size(); i++)
-			cd_options.emplace_back(raw_options[i].second, (value.has_value() && value.value() == raw_options[i].first));
+		for (auto & raw_option : raw_options)
+			cd_options.emplace_back(raw_option.second, (value.has_value() && value.value() == raw_option.first));
 		OpenChoiceDialog(title, false, std::move(cd_options),
 			[game_settings, section, key, raw_options = std::move(raw_options)](s32 index, const std::string& title, bool checked) {
 				if (index >= 0)
@@ -5190,10 +5190,9 @@ void FullscreenUI::DrawNetworkHDDSettingsPage()
 		if (current_api_index > 0 && current_api_index < adapter_lists.size())
 		{
 			const auto& adapter_list = adapter_lists[current_api_index];
-			for (size_t i = 0; i < adapter_list.size(); i++)
+			for (const auto & adapter : adapter_list)
 			{
-				const auto& adapter = adapter_list[i];
-				options.emplace_back(adapter.name, adapter.guid == current_device);
+					options.emplace_back(adapter.name, adapter.guid == current_device);
 			}
 		}
 

@@ -1578,7 +1578,7 @@ ImGuiIO::ImGuiIO()
     MousePosPrev = ImVec2(-FLT_MAX, -FLT_MAX);
     MouseSource = ImGuiMouseSource_Mouse;
     for (int i = 0; i < IM_ARRAYSIZE(MouseDownDuration); i++) MouseDownDuration[i] = MouseDownDurationPrev[i] = -1.0f;
-    for (int i = 0; i < IM_ARRAYSIZE(KeysData); i++) { KeysData[i].DownDuration = KeysData[i].DownDurationPrev = -1.0f; }
+    for (auto & i : KeysData) { i.DownDuration = i.DownDurationPrev = -1.0f; }
     AppAcceptingEvents = true;
 }
 
@@ -5954,9 +5954,9 @@ void ImGui::Render()
         if (IsWindowActiveAndVisible(window) && (window->Flags & ImGuiWindowFlags_ChildWindow) == 0 && window != windows_to_render_top_most[0] && window != windows_to_render_top_most[1])
             AddRootWindowToDrawData(window);
     }
-    for (int n = 0; n < IM_ARRAYSIZE(windows_to_render_top_most); n++)
-        if (windows_to_render_top_most[n] && IsWindowActiveAndVisible(windows_to_render_top_most[n])) // NavWindowingTarget is always temporarily displayed as the top-most window
-            AddRootWindowToDrawData(windows_to_render_top_most[n]);
+    for (auto & n : windows_to_render_top_most)
+        if (n && IsWindowActiveAndVisible(n)) // NavWindowingTarget is always temporarily displayed as the top-most window
+            AddRootWindowToDrawData(n);
 
     // Draw software mouse cursor if requested by io.MouseDrawCursor flag
     if (g.IO.MouseDrawCursor && g.MouseCursor != ImGuiMouseCursor_None)
@@ -9844,8 +9844,8 @@ bool ImGui::IsMousePosValid(const ImVec2* mouse_pos)
 bool ImGui::IsAnyMouseDown()
 {
     ImGuiContext& g = *GImGui;
-    for (int n = 0; n < IM_ARRAYSIZE(g.IO.MouseDown); n++)
-        if (g.IO.MouseDown[n])
+    for (bool n : g.IO.MouseDown)
+        if (n)
             return true;
     return false;
 }

@@ -343,10 +343,11 @@ MixerContext::auto_matrix()
   // Normalize matrix if needed.
   if (maxcoef > maxval) {
     maxcoef /= maxval;
-    for (uint32_t i = 0; i < CHANNELS_MAX; i++)
-      for (uint32_t j = 0; j < CHANNELS_MAX; j++) {
-        _matrix[i][j] /= maxcoef;
-      }
+    for (auto & i : _matrix)
+		for (double& j : i)
+		{
+			j /= maxcoef;
+		}
   }
 
   if (_format == CUBEB_SAMPLE_FLOAT32NE) {

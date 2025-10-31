@@ -200,9 +200,8 @@ void ReferenceResolver::resolve_()
     _c4dbgp("modifying tree...");
     id_type prev_parent_ref = NONE;
     id_type prev_parent_ref_after = NONE;
-    for(id_type i = 0, e = m_refs.size(); i < e; ++i)
+    for(const auto & refdata : m_refs)
     {
-        RefData const& C4_RESTRICT refdata = m_refs[i];
         _c4dbgpf("instance[{}:node{}]: {}/{}...", i, refdata.node, i+1, e);
         if( ! refdata.type.is_ref())
             continue;

@@ -41,10 +41,9 @@ DEV9DnsHostDialog::DEV9DnsHostDialog(std::vector<HostEntryUi> hosts, QWidget* pa
 	m_ui.hostList->setModel(m_ethHosts_proxy);
 	m_ui.hostList->setItemDelegateForColumn(3, new IPItemDelegate(m_ui.hostList));
 
-	for (size_t i = 0; i < hosts.size(); i++)
+	for (auto entry : hosts)
 	{
-		HostEntryUi entry = hosts[i];
-		const int row = m_ethHost_model->rowCount();
+			const int row = m_ethHost_model->rowCount();
 		m_ethHost_model->insertRow(row);
 
 		QSignalBlocker sb(m_ethHost_model);

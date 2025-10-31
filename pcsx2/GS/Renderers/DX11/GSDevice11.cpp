@@ -849,11 +849,11 @@ std::string GSDevice11::GetDriverInfo() const
 		{D3D_FEATURE_LEVEL_11_0, "D3D_FEATURE_LEVEL_11_0"},
 	}};
 
-	for (size_t i = 0; i < std::size(feature_level_names); i++)
+	for (const auto & feature_level_name : feature_level_names)
 	{
-		if (m_feature_level == std::get<0>(feature_level_names[i]))
+		if (m_feature_level == std::get<0>(feature_level_name))
 		{
-			ret = std::get<1>(feature_level_names[i]);
+			ret = std::get<1>(feature_level_name);
 			break;
 		}
 	}
@@ -2430,11 +2430,11 @@ void GSDevice11::PSUnbindConflictingSRVs(GSTexture* tex1, GSTexture* tex2)
 {
 	// Make sure no SRVs are bound using the same texture before binding it to a RTV.
 	bool changed = false;
-	for (size_t i = 0; i < m_state.ps_sr_views.size(); i++)
+	for (auto & ps_sr_view : m_state.ps_sr_views)
 	{
-		if ((tex1 && m_state.ps_sr_views[i] == *(GSTexture11*)tex1) || (tex2 && m_state.ps_sr_views[i] == *(GSTexture11*)tex2))
+		if ((tex1 && ps_sr_view == *(GSTexture11*)tex1) || (tex2 && ps_sr_view == *(GSTexture11*)tex2))
 		{
-			m_state.ps_sr_views[i] = nullptr;
+			ps_sr_view = nullptr;
 			changed = true;
 		}
 	}
