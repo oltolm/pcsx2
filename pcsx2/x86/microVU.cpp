@@ -66,17 +66,17 @@ void mVUreset(microVU& mVU, bool resetReserve)
 
 	for (u32 i = 0; i < (mVU.progSize / 2); i++)
 	{
-		if (!mVU.prog.prog[i])
+		auto& list = mVU.prog.prog[i];
+		if (!list)
 		{
-			mVU.prog.prog[i] = new std::deque<microProgram*>();
+			list = new std::deque<microProgram*>();
 			continue;
 		}
-		std::deque<microProgram*>::iterator it(mVU.prog.prog[i]->begin());
-		for (; it != mVU.prog.prog[i]->end(); ++it)
+		for (auto& it : *list)
 		{
-			mVUdeleteProg(mVU, it[0]);
+			mVUdeleteProg(mVU, it);
 		}
-		mVU.prog.prog[i]->clear();
+		list->clear();
 		mVU.prog.quick[i].block = NULL;
 		mVU.prog.quick[i].prog = NULL;
 	}
@@ -88,14 +88,14 @@ void mVUclose(microVU& mVU)
 	// Delete Programs and Block Managers
 	for (u32 i = 0; i < (mVU.progSize / 2); i++)
 	{
-		if (!mVU.prog.prog[i])
+		auto& list = mVU.prog.prog[pc];
+		if (!list)
 			continue;
-		std::deque<microProgram*>::iterator it(mVU.prog.prog[i]->begin());
-		for (; it != mVU.prog.prog[i]->end(); ++it)
+		for (auto& it : *list)
 		{
-			mVUdeleteProg(mVU, it[0]);
+			mVUdeleteProg(mVU, it);
 		}
-		safe_delete(mVU.prog.prog[i]);
+		safe_delete(list);
 	}
 }
 
@@ -175,14 +175,13 @@ u64 mVUrangesHash(microVU& mVU, microProgram& prog)
 		u32 v32[2];
 	} hash = {0};
 
-	std::deque<microRange>::const_iterator it(prog.ranges->begin());
-	for (; it != prog.ranges->end(); ++it)
+	for (const auto& it : *prog.ranges)
 	{
-		if ((it[0].start < 0) || (it[0].end < 0))
+		if ((it.start < 0) || (it.end < 0))
 		{
-			DevCon.Error("microVU%d: Negative Range![%d][%d]", mVU.index, it[0].start, it[0].end);
+			DevCon.Error("microVU%d: Negative Range![%d][%d]", mVU.index, it.start, it.end);
 		}
-		for (int i = it[0].start / 4; i < it[0].end / 4; i++)
+		for (int i = it.start / 4; i < it.end / 4; i++)
 		{
 			hash.v32[0] -= prog.data[i];
 			hash.v32[1] ^= prog.data[i];
@@ -197,12 +196,11 @@ void mVUprintUniqueRatio(microVU& mVU)
 	std::vector<u64> v;
 	for (auto list : mVU.prog.prog)
 	{
-			if (!list)
+		if (!list)
 			continue;
-		std::deque<microProgram*>::iterator it(list->begin());
-		for (; it != list->end(); ++it)
+		for (auto& it : *list)
 		{
-			v.push_back(mVUrangesHash(mVU, *it[0]));
+			v.push_back(mVUrangesHash(mVU, *it));
 		}
 	}
 	u32 total = v.size();
@@ -250,15 +248,14 @@ _mVUt __fi void* mVUsearchProg(u32 startPC, uptr pState)
 
 	if (!quick.prog) // If null, we need to search for new program
 	{
-		std::deque<microProgram*>::iterator it(list->begin());
-		for (; it != list->end(); ++it)
+		for (std::deque<microProgram*>::iterator it(list->begin()); it != list->end(); ++it)
 		{
-			bool b = mVUcmpProg(mVU, *it[0]);
+			bool b = mVUcmpProg(mVU, **it);
 
 			if (b)
 			{
-				quick.block = it[0]->block[startPC / 8];
-				quick.prog  = it[0];
+				quick.block = (*it)->block[startPC / 8];
+				quick.prog = *it;
 				list->erase(it);
 				list->push_front(quick.prog);
 
