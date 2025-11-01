@@ -106,8 +106,10 @@ void pxOnAssertFail(const char* file, int line, const char* func, const char* ms
 	}
 	else if (result != IDIGNORE)
 	{
+#ifndef __MINGW32__
 		// try to save a crash dump before exiting
 		CrashHandler::WriteDumpForCaller();
+#endif
 		TerminateProcess(GetCurrentProcess(), 0xBAADC0DE);
 	}
 #else
