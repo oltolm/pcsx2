@@ -1306,8 +1306,10 @@ bool QtHost::InitializeConfig()
 		return false;
 	}
 
+#ifndef __MINGW32__
 	// Write crash dumps to the data directory, since that'll be accessible for certain.
 	CrashHandler::SetWriteDirectory(EmuFolders::DataRoot);
+#endif
 
 	const std::string path = Path::Combine(EmuFolders::Settings, "PCSX2.ini");
 	const bool settings_exists = FileSystem::FileExists(path.c_str());
@@ -2338,7 +2340,9 @@ public:
 
 int main(int argc, char* argv[])
 {
+#ifndef __MINGW32__
 	CrashHandler::Install();
+#endif
 
 // Exceptions are disabled, so we can't try/catch this.
 // Timestamps in some locales showed up wrong on Windows.
