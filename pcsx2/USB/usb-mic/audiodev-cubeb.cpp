@@ -15,7 +15,7 @@
 #include "common/RedtapeWindows.h"
 #include <objbase.h>
 
-#include "wil/resource.h"
+#include "windows/wil/resource.h"
 #endif
 
 // Since the context gets used to populate the device list, that unfortunately means

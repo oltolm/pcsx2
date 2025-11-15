@@ -19,7 +19,7 @@
 #include "common/RedtapeWindows.h"
 #include <objbase.h>
 
-#include "wil/resource.h"
+#include "windows/wil/resource.h"
 #endif
 
 namespace

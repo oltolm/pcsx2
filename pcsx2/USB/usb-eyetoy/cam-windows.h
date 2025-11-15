@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "videodev.h"
+#include "windows/wil/resource.h"
 
 #include <dshow.h>
 #include <wrl/client.h>
