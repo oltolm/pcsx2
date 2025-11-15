@@ -100,6 +100,7 @@ namespace usb_eyetoy
 				}
 			}
 
+			// FIXME: CoUninitialize without a CoInitialize?
 			CoUninitialize();
 			return devList;
 		}
