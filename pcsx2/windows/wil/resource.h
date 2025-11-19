@@ -257,6 +257,8 @@ private:
 using unique_prop_variant =
     wil::unique_struct<PROPVARIANT, decltype(&::PropVariantClear), ::PropVariantClear,
                        decltype(&::PropVariantInit), ::PropVariantInit>;
+
+using unique_variant = wil::unique_struct<VARIANT, decltype(&::VariantClear), ::VariantClear, decltype(&::VariantInit), ::VariantInit>;
 }  // namespace wil
 
 namespace wil

@@ -2372,12 +2372,26 @@ bool VMManager::IsLoadableFileName(const std::string_view path)
 }
 
 #ifdef _WIN32
+struct Deleter
+{
+	// By defining the pointer type, we can delete a type other than T*.
+	// In other words, we can declare unique_ptr<HANDLE, Deleter> instead of
+	// unique_ptr<void, Deleter> which leaks the HANDLE abstraction.
+	typedef HLOCAL pointer;
+
+	void operator()(HLOCAL h)
+	{
+		LocalFree(h);
+	}
+};
+
 inline void LogUserPowerPlan()
 {
-	wil::unique_any<GUID*, decltype(&::LocalFree), ::LocalFree> pPwrGUID;
-	DWORD ret = PowerGetActiveScheme(NULL, pPwrGUID.put());
+	GUID* pPwrGUID;
+	DWORD ret = PowerGetActiveScheme(NULL, &pPwrGUID);
 	if (ret != ERROR_SUCCESS)
 		return;
+	std::unique_ptr<HLOCAL, Deleter> ptr(pPwrGUID);
 
 	UCHAR aBuffer[2048];
 	DWORD aBufferSize = sizeof(aBuffer);

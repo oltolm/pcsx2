@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "common/RedtapeWindows.h"
+#include "windows/wil/resource.h"
 #include "common/StringUtil.h"
 
 #include "fmt/format.h"
 
+#include <memory>
 #include <stdio.h>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -95,25 +97,25 @@ bool IsTAPDevice(const TCHAR* guid)
 		}
 		else
 		{
-		len = sizeof(component_id);
+			len = sizeof(component_id);
 			status = RegQueryValueEx(unit_key.get(), component_id_string, nullptr, &data_type,
-			(LPBYTE)component_id, &len);
+				(LPBYTE)component_id, &len);
 
-		if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
-		{
-			len = sizeof(net_cfg_instance_id);
-				status = RegQueryValueEx(unit_key.get(), net_cfg_instance_id_string, nullptr, &data_type,
-				(LPBYTE)net_cfg_instance_id, &len);
-
-			if (status == ERROR_SUCCESS && data_type == REG_SZ)
+			if (!(status != ERROR_SUCCESS || data_type != REG_SZ))
 			{
-				// tap_ovpnconnect, tap0901 or root\tap, no clue why
-				if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
+				len = sizeof(net_cfg_instance_id);
+				status = RegQueryValueEx(unit_key.get(), net_cfg_instance_id_string, nullptr, &data_type,
+					(LPBYTE)net_cfg_instance_id, &len);
+
+				if (status == ERROR_SUCCESS && data_type == REG_SZ)
 				{
-					return true;
+					// tap_ovpnconnect, tap0901 or root\tap, no clue why
+					if ((!wcsncmp(component_id, L"tap", 3) || !wcsncmp(component_id, L"root\\tap", 8)) && !_tcscmp(net_cfg_instance_id, guid))
+					{
+						return true;
+					}
 				}
 			}
-		}
 		}
 		++i;
 	}
@@ -179,8 +181,8 @@ std::vector<AdapterEntry> TAPAdapter::GetAdapters()
 					t.name = StringUtil::WideStringToUTF8String(std::wstring(name_data));
 					t.guid = StringUtil::WideStringToUTF8String(std::wstring(enum_name));
 					tap_nic.push_back(t);
-		}
-	}
+				}
+			}
 		}
 	}
 
@@ -213,6 +215,22 @@ static int TAPSetStatus(HANDLE handle, int status)
 //Open the TAP adapter and set the connection to enabled :)
 HANDLE TAPOpen(const std::string& device_guid)
 {
+	struct Deleter
+	{
+		// By defining the pointer type, we can delete a type other than T*.
+		// In other words, we can declare unique_ptr<HANDLE, Deleter> instead of
+		// unique_ptr<void, Deleter> which leaks the HANDLE abstraction.
+		typedef HANDLE pointer;
+
+		void operator()(HANDLE h)
+		{
+			if (h != INVALID_HANDLE_VALUE)
+			{
+				CloseHandle(h);
+			}
+		}
+	};
+
 	struct
 	{
 		unsigned long major;
@@ -223,7 +241,7 @@ HANDLE TAPOpen(const std::string& device_guid)
 
 	std::string device_path = USERMODEDEVICEDIR + device_guid + TAPSUFFIX;
 
-	wil::unique_hfile handle(CreateFileA(
+	std::unique_ptr<HANDLE, Deleter> handle(CreateFileA(
 		device_path.c_str(),
 		GENERIC_READ | GENERIC_WRITE,
 		0,
@@ -232,7 +250,7 @@ HANDLE TAPOpen(const std::string& device_guid)
 		FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
 		0));
 
-	if (!handle)
+	if (handle.get() == INVALID_HANDLE_VALUE)
 	{
 		return INVALID_HANDLE_VALUE;
 	}

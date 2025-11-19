@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #pragma once
+#include <memory>
 #define DIRECTINPUT_VERSION 0x0800
 #include "common/RedtapeWindows.h"
 #include "Input/InputSource.h"
@@ -74,8 +75,21 @@ private:
 
 	void CheckForStateChanges(size_t index, const DIJOYSTATE2& new_state);
 
+	struct Deleter
+	{
+		typedef HMODULE pointer;
+
+		void operator()(HMODULE h)
+		{
+			if (h != NULL)
+			{
+				::FreeLibrary(h);
+			}
+		}
+	};
+
 	// Those must go first in the class so they are destroyed last
-	wil::unique_hmodule m_dinput_module;
+	std::unique_ptr<HMODULE, Deleter> m_dinput_module;
 	Microsoft::WRL::ComPtr<IDirectInput8W> m_dinput;
 	HWND m_toplevel_window = nullptr;
 
