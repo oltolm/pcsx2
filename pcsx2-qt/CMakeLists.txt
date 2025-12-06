@@ -297,7 +297,6 @@ target_link_libraries(pcsx2-qt PRIVATE
 	PCSX2
 	Qt6::Core
 	Qt6::Gui
-	Qt6::GuiPrivate
 	Qt6::Widgets
 )
 
