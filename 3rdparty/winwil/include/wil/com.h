@@ -50,33 +50,33 @@ namespace details
     //          return true for ambiguous conversions.  This was a bug in our compiler that has since been fixed.
     //          Eventually, once that fix propagates we can move to a more efficient __is_convertible_to without
     //          the added complexity.
-    template <class TFrom, class TTo>
-    struct is_com_convertible
-        : wistd::bool_constant<__is_convertible_to(TFrom, TTo) && (__is_abstract(TFrom) || wistd::is_same<TFrom, TTo>::value)>
-    {
-    };
+	template <class TFrom, class TTo>
+	struct is_com_convertible
+		: wistd::bool_constant<std::is_convertible_v<TFrom, TTo> && (__is_abstract(TFrom) || wistd::is_same<TFrom, TTo>::value)>
+	{
+	};
 
-    using tag_com_query = wistd::integral_constant<char, 0>;
-    using tag_try_com_query = wistd::integral_constant<char, 1>;
-    using tag_com_copy = wistd::integral_constant<char, 2>;
-    using tag_try_com_copy = wistd::integral_constant<char, 3>;
+	using tag_com_query = wistd::integral_constant<char, 0>;
+	using tag_try_com_query = wistd::integral_constant<char, 1>;
+	using tag_com_copy = wistd::integral_constant<char, 2>;
+	using tag_try_com_copy = wistd::integral_constant<char, 3>;
 
-    class default_query_policy
-    {
-    public:
-        template <typename T>
-        static HRESULT query(_In_ T* ptr, REFIID riid, _COM_Outptr_ void** result)
-        {
-            return ptr->QueryInterface(riid, result);
-        }
+	class default_query_policy
+	{
+	public:
+		template <typename T>
+		static HRESULT query(_In_ T* ptr, REFIID riid, _COM_Outptr_ void** result)
+		{
+			return ptr->QueryInterface(riid, result);
+		}
 
-        template <typename T, typename TResult>
-        static HRESULT query(_In_ T* ptr, _COM_Outptr_ TResult** result)
-        {
-            return query_dispatch(ptr, typename details::is_com_convertible<T*, TResult*>::type(), result);
-        }
+		template <typename T, typename TResult>
+		static HRESULT query(_In_ T* ptr, _COM_Outptr_ TResult** result)
+		{
+			return query_dispatch(ptr, typename details::is_com_convertible<T*, TResult*>::type(), result);
+		}
 
-    private:
+	private:
         template <typename T, typename TResult>
         static HRESULT query_dispatch(_In_ T* ptr, wistd::true_type, _COM_Outptr_ TResult** result) // convertible
         {
@@ -92,18 +92,18 @@ namespace details
             __analysis_assume(SUCCEEDED(hr) || (*result == nullptr));
             return hr;
         }
-    };
+	};
 
-    template <typename T>
-    struct query_policy_helper
-    {
-        using type = default_query_policy;
-    };
+	template <typename T>
+	struct query_policy_helper
+	{
+		using type = default_query_policy;
+	};
 
-    class weak_query_policy
-    {
-    public:
-        static HRESULT query(_In_ IWeakReference* ptr, REFIID riid, _COM_Outptr_ void** result)
+	class weak_query_policy
+	{
+	public:
+		static HRESULT query(_In_ IWeakReference* ptr, REFIID riid, _COM_Outptr_ void** result)
         {
             WI_ASSERT_MSG(riid != __uuidof(IWeakReference), "Cannot resolve a weak reference to IWeakReference");
             *result = nullptr;
@@ -149,11 +149,11 @@ namespace details
         {
             return query(ptr, IID_PPV_ARGS(result));
         }
-    };
+	};
 
-    template <>
-    struct query_policy_helper<IWeakReference>
-    {
+	template <>
+	struct query_policy_helper<IWeakReference>
+	{
         using type = weak_query_policy;
     };
 
@@ -239,38 +239,38 @@ public:
     }
 
     //! Copy-construction from a convertible `com_ptr_t` (copies and AddRef's the parameter).
-    template <class U, typename err, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t(const com_ptr_t<U, err>& other) WI_NOEXCEPT : com_ptr_t(static_cast<pointer>(other.get()))
-    {
-    }
+	template <class U, typename err, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t(const com_ptr_t<U, err>& other) WI_NOEXCEPT : com_ptr_t(static_cast<pointer>(other.get()))
+	{
+	}
 
-    //! Move construction from a like `com_ptr_t` (avoids AddRef/Release by moving from the parameter).
-    com_ptr_t(com_ptr_t&& other) WI_NOEXCEPT : m_ptr(other.detach())
-    {
-    }
+	//! Move construction from a like `com_ptr_t` (avoids AddRef/Release by moving from the parameter).
+	com_ptr_t(com_ptr_t&& other) WI_NOEXCEPT : m_ptr(other.detach())
+	{
+	}
 
-    //! Move construction from a compatible `com_ptr_t` (avoids AddRef/Release by moving from the parameter).
-    template <class U, typename err, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t(com_ptr_t<U, err>&& other) WI_NOEXCEPT : m_ptr(other.detach())
-    {
-    }
-    //! @}
+	//! Move construction from a compatible `com_ptr_t` (avoids AddRef/Release by moving from the parameter).
+	template <class U, typename err, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t(com_ptr_t<U, err>&& other) WI_NOEXCEPT : m_ptr(other.detach())
+	{
+	}
+	//! @}
 
-    //! Destructor (releases the pointer).
-    ~com_ptr_t() WI_NOEXCEPT
-    {
-        if (m_ptr)
-        {
-            m_ptr->Release();
-        }
-    }
+	//! Destructor (releases the pointer).
+	~com_ptr_t() WI_NOEXCEPT
+	{
+		if (m_ptr)
+		{
+			m_ptr->Release();
+		}
+	}
 
-    //! @name Assignment operators
-    //! @{
+	//! @name Assignment operators
+	//! @{
 
-    //! Assign to nullptr (releases the current pointer, holds nullptr).
-    com_ptr_t& operator=(wistd::nullptr_t) WI_NOEXCEPT
-    {
+	//! Assign to nullptr (releases the current pointer, holds nullptr).
+	com_ptr_t& operator=(wistd::nullptr_t) WI_NOEXCEPT
+	{
         reset();
         return *this;
     }
@@ -298,45 +298,45 @@ public:
     }
 
     //! Assign a convertible `com_ptr_t` (releases current pointer, copies and AddRef's the parameter).
-    template <class U, typename err, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t& operator=(const com_ptr_t<U, err>& other) WI_NOEXCEPT
-    {
-        return operator=(static_cast<pointer>(other.get())); // NOLINT(misc-unconventional-assign-operator): Can't see through function call
-    }
+	template <class U, typename err, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t& operator=(const com_ptr_t<U, err>& other) WI_NOEXCEPT
+	{
+		return operator=(static_cast<pointer>(other.get())); // NOLINT(misc-unconventional-assign-operator): Can't see through function call
+	}
 
-    //! Move assign from a like `com_ptr_t` (releases current pointer, avoids AddRef/Release by moving the parameter).
-    com_ptr_t& operator=(com_ptr_t&& other) WI_NOEXCEPT
-    {
-        attach(other.detach());
-        return *this;
-    }
+	//! Move assign from a like `com_ptr_t` (releases current pointer, avoids AddRef/Release by moving the parameter).
+	com_ptr_t& operator=(com_ptr_t&& other) WI_NOEXCEPT
+	{
+		attach(other.detach());
+		return *this;
+	}
 
-    //! Move assignment from a compatible `com_ptr_t` (releases current pointer, avoids AddRef/Release by moving from the
-    //! parameter).
-    template <class U, typename err, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t& operator=(com_ptr_t<U, err>&& other) WI_NOEXCEPT
-    {
-        attach(other.detach());
-        return *this;
-    }
-    //! @}
+	//! Move assignment from a compatible `com_ptr_t` (releases current pointer, avoids AddRef/Release by moving from the
+	//! parameter).
+	template <class U, typename err, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t& operator=(com_ptr_t<U, err>&& other) WI_NOEXCEPT
+	{
+		attach(other.detach());
+		return *this;
+	}
+	//! @}
 
-    //! @name Modifiers
-    //! @{
+	//! @name Modifiers
+	//! @{
 
-    //! Swap pointers with an another named com_ptr_t object.
-    template <typename err>
-    void swap(com_ptr_t<T, err>& other) WI_NOEXCEPT
-    {
-        auto ptr = m_ptr;
-        m_ptr = other.m_ptr;
-        other.m_ptr = ptr;
-    }
+	//! Swap pointers with an another named com_ptr_t object.
+	template <typename err>
+	void swap(com_ptr_t<T, err>& other) WI_NOEXCEPT
+	{
+		auto ptr = m_ptr;
+		m_ptr = other.m_ptr;
+		other.m_ptr = ptr;
+	}
 
-    //! Swap pointers with a rvalue reference to another com_ptr_t object.
-    template <typename err>
-    void swap(com_ptr_t<T, err>&& other) WI_NOEXCEPT
-    {
+	//! Swap pointers with a rvalue reference to another com_ptr_t object.
+	template <typename err>
+	void swap(com_ptr_t<T, err>&& other) WI_NOEXCEPT
+	{
         swap(other);
     }
 
@@ -841,48 +841,48 @@ public:
     //! @{
 
     //! Copy construct from a compatible WRL ComPtr<T>.
-    template <class U, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t(const ::Microsoft::WRL::ComPtr<U>& other) WI_NOEXCEPT : com_ptr_t(static_cast<pointer>(other.Get()))
-    {
-    }
+	template <class U, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t(const ::Microsoft::WRL::ComPtr<U>& other) WI_NOEXCEPT : com_ptr_t(static_cast<pointer>(other.Get()))
+	{
+	}
 
-    //! Move construct from a compatible WRL ComPtr<T>.
-    template <class U, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t(::Microsoft::WRL::ComPtr<U>&& other) WI_NOEXCEPT : m_ptr(other.Detach())
-    {
-    }
+	//! Move construct from a compatible WRL ComPtr<T>.
+	template <class U, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t(::Microsoft::WRL::ComPtr<U>&& other) WI_NOEXCEPT : m_ptr(other.Detach())
+	{
+	}
 
-    //! Assign from a compatible WRL ComPtr<T>.
-    template <class U, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t& operator=(const ::Microsoft::WRL::ComPtr<U>& other) WI_NOEXCEPT
-    {
-        return operator=(static_cast<pointer>(other.Get())); // NOLINT(misc-unconventional-assign-operator): Can't see through function call
-    }
+	//! Assign from a compatible WRL ComPtr<T>.
+	template <class U, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t& operator=(const ::Microsoft::WRL::ComPtr<U>& other) WI_NOEXCEPT
+	{
+		return operator=(static_cast<pointer>(other.Get())); // NOLINT(misc-unconventional-assign-operator): Can't see through function call
+	}
 
-    //! Move assign from a compatible WRL ComPtr<T>.
-    template <class U, class = wistd::enable_if_t<__is_convertible_to(U*, pointer)>>
-    com_ptr_t& operator=(::Microsoft::WRL::ComPtr<U>&& other) WI_NOEXCEPT
-    {
-        attach(other.Detach());
-        return *this;
-    }
+	//! Move assign from a compatible WRL ComPtr<T>.
+	template <class U, class = wistd::enable_if_t<std::is_convertible_v<U*, pointer>>>
+	com_ptr_t& operator=(::Microsoft::WRL::ComPtr<U>&& other) WI_NOEXCEPT
+	{
+		attach(other.Detach());
+		return *this;
+	}
 
-    //! Swap pointers with a WRL ComPtr<T> to the same interface.
-    void swap(::Microsoft::WRL::ComPtr<T>& other) WI_NOEXCEPT
-    {
-        auto ptr = m_ptr;
-        m_ptr = other.Detach();
-        other.Attach(ptr);
-    }
+	//! Swap pointers with a WRL ComPtr<T> to the same interface.
+	void swap(::Microsoft::WRL::ComPtr<T>& other) WI_NOEXCEPT
+	{
+		auto ptr = m_ptr;
+		m_ptr = other.Detach();
+		other.Attach(ptr);
+	}
 
-    //! Swap pointers with a rvalue reference to a WRL ComPtr<T> to the same interface.
-    void swap(::Microsoft::WRL::ComPtr<T>&& other) WI_NOEXCEPT
-    {
-        swap(other);
-    }
-    //! @}  // WRL compatibility
+	//! Swap pointers with a rvalue reference to a WRL ComPtr<T> to the same interface.
+	void swap(::Microsoft::WRL::ComPtr<T>&& other) WI_NOEXCEPT
+	{
+		swap(other);
+	}
+	//! @}  // WRL compatibility
 
-    // Internal Helpers
+	// Internal Helpers
     /// @cond
     template <class U>
     com_ptr_t(_In_ U* ptr, details::tag_com_query) : m_ptr(nullptr)
@@ -961,10 +961,10 @@ inline void swap(com_ptr_t<T, Err>& left, com_ptr_t<T, Err>& right) WI_NOEXCEPT
 template <typename TLeft, typename ErrLeft, typename TRight, typename ErrRight>
 inline bool operator==(const com_ptr_t<TLeft, ErrLeft>& left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() == right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() == right.get());
 }
 
 // We don't document all of the global comparison operators (reduce clutter)
@@ -972,10 +972,10 @@ inline bool operator==(const com_ptr_t<TLeft, ErrLeft>& left, const com_ptr_t<TR
 template <typename TLeft, typename ErrLeft, typename TRight, typename ErrRight>
 inline bool operator<(const com_ptr_t<TLeft, ErrLeft>& left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() < right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() < right.get());
 }
 
 template <typename TLeft, typename ErrLeft>
@@ -1037,19 +1037,19 @@ inline void swap(com_ptr_t<T, ErrLeft>& left, ::Microsoft::WRL::ComPtr<T>& right
 template <typename TLeft, typename ErrLeft, typename TRight>
 inline bool operator==(const com_ptr_t<TLeft, ErrLeft>& left, const ::Microsoft::WRL::ComPtr<TRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() == right.Get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() == right.Get());
 }
 
 template <typename TLeft, typename ErrLeft, typename TRight>
 inline bool operator<(const com_ptr_t<TLeft, ErrLeft>& left, const ::Microsoft::WRL::ComPtr<TRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() < right.Get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() < right.Get());
 }
 
 template <typename TLeft, typename ErrLeft, typename TRight>
@@ -1085,19 +1085,19 @@ inline void swap(::Microsoft::WRL::ComPtr<T>& left, com_ptr_t<T, ErrRight>& righ
 template <typename TLeft, typename TRight, typename ErrRight>
 inline bool operator==(const ::Microsoft::WRL::ComPtr<TLeft>& left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.Get() == right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.Get() == right.get());
 }
 
 template <typename TLeft, typename TRight, typename ErrRight>
 inline bool operator<(const ::Microsoft::WRL::ComPtr<TLeft>& left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.Get() < right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.Get() < right.get());
 }
 
 template <typename TLeft, typename TRight, typename ErrRight>
@@ -1134,19 +1134,19 @@ inline bool operator<=(const ::Microsoft::WRL::ComPtr<TLeft>& left, const com_pt
 template <typename TLeft, typename ErrLeft, typename TRight>
 inline bool operator==(const com_ptr_t<TLeft, ErrLeft>& left, TRight* right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() == right);
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() == right);
 }
 
 template <typename TLeft, typename ErrLeft, typename TRight>
 inline bool operator<(const com_ptr_t<TLeft, ErrLeft>& left, TRight* right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left.get() < right);
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left.get() < right);
 }
 
 template <typename TLeft, typename ErrLeft, typename TRight>
@@ -1176,19 +1176,19 @@ inline bool operator<=(const com_ptr_t<TLeft, ErrLeft>& left, TRight* right) WI_
 template <typename TLeft, typename TRight, typename ErrRight>
 inline bool operator==(TLeft* left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left == right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left == right.get());
 }
 
 template <typename TLeft, typename TRight, typename ErrRight>
 inline bool operator<(TLeft* left, const com_ptr_t<TRight, ErrRight>& right) WI_NOEXCEPT
 {
-    static_assert(
-        __is_convertible_to(TLeft*, TRight*) || __is_convertible_to(TRight*, TLeft*),
-        "comparison operator requires left and right pointers to be compatible");
-    return (left < right.get());
+	static_assert(
+		std::is_convertible_v<TLeft*, TRight> || std::is_convertible_v<TRight*, TLeft>,
+		"comparison operator requires left and right pointers to be compatible");
+	return (left < right.get());
 }
 
 template <typename TLeft, typename TRight, typename ErrRight>
