@@ -96,7 +96,7 @@ bool load_pcap()
 		return false;
 
 #define LOAD_FUNCTION(name)                                  \
-	fp_##name = (fp_##name##_t)GetProcAddress(hpcap, #name); \
+	fp_##name = (fp_##name##_t)(void*)GetProcAddress(hpcap, #name); \
 	if (fp_##name == nullptr)                                \
 	{                                                        \
 		FreeLibrary(hpcap);                                  \

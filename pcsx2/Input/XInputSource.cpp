@@ -4,7 +4,6 @@
 #include "Input/XInputSource.h"
 #include "Input/InputManager.h"
 
-#include "common/Assertions.h"
 #include "common/StringUtil.h"
 #include "common/Console.h"
 
@@ -127,8 +126,11 @@ XInputSource::XInputSource() = default;
 
 XInputSource::~XInputSource() = default;
 
+#define LOAD_FUNCTION(t, lpProcName) t = reinterpret_cast<decltype(t)>(reinterpret_cast<void*>(GetProcAddress(m_xinput_module, lpProcName)))
+
 bool XInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex>& settings_lock)
 {
+
 	// xinput1_3.dll is flawed and obsolete, but it's also commonly used by wrappers.
 	// For this reason, try to load it *only* from the application directory, and not system32.
 	m_xinput_module = LoadLibraryExW(L"xinput1_3", nullptr, LOAD_LIBRARY_SEARCH_APPLICATION_DIR);
@@ -147,15 +149,14 @@ bool XInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex
 	}
 
 	// Try the hidden version of XInputGetState(), which lets us query the guide button.
-	m_xinput_get_state = reinterpret_cast<decltype(m_xinput_get_state)>(GetProcAddress(m_xinput_module, reinterpret_cast<LPCSTR>(100)));
+	LOAD_FUNCTION(m_xinput_get_state, reinterpret_cast<LPCSTR>(100));
 	if (!m_xinput_get_state)
-		m_xinput_get_state = reinterpret_cast<decltype(m_xinput_get_state)>(GetProcAddress(m_xinput_module, "XInputGetState"));
-	m_xinput_set_state = reinterpret_cast<decltype(m_xinput_set_state)>(GetProcAddress(m_xinput_module, "XInputSetState"));
-	m_xinput_get_capabilities =
-		reinterpret_cast<decltype(m_xinput_get_capabilities)>(GetProcAddress(m_xinput_module, "XInputGetCapabilities"));
+		LOAD_FUNCTION(m_xinput_get_state, "XInputGetState");
+	LOAD_FUNCTION(m_xinput_set_state, "XInputSetState");
+	LOAD_FUNCTION(m_xinput_get_capabilities, "XInputGetCapabilities");
 
 	// SCP extension, only exists when the bridge xinput1_3.dll is in use
-	m_xinput_get_extended = reinterpret_cast<decltype(m_xinput_get_extended)>(GetProcAddress(m_xinput_module, "XInputGetExtended"));
+	LOAD_FUNCTION(m_xinput_get_extended, "XInputGetExtended");
 	if (!m_xinput_get_state || !m_xinput_set_state || !m_xinput_get_capabilities)
 	{
 		Console.Error("Failed to get XInput function pointers.");

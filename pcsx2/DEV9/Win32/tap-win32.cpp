@@ -257,7 +257,7 @@ HANDLE TAPOpen(const std::string& device_guid)
 	return handle.release();
 }
 
-PIP_ADAPTER_ADDRESSES FindAdapterViaIndex(PIP_ADAPTER_ADDRESSES adapterList, int ifIndex)
+PIP_ADAPTER_ADDRESSES FindAdapterViaIndex(PIP_ADAPTER_ADDRESSES adapterList, IF_INDEX ifIndex)
 {
 	PIP_ADAPTER_ADDRESSES currentAdapter = adapterList;
 	do
@@ -350,7 +350,7 @@ bool TAPGetWin32Adapter(const std::string& name, PIP_ADAPTER_ADDRESSES adapter, 
 	{
 		for (ULONG i = 0; i < table->NumEntries; i++)
 		{
-			int targetIndex = searchList[vi];
+			NET_IFINDEX targetIndex = searchList[vi];
 			MIB_IFSTACK_ROW row = table->Table[i];
 			if (row.LowerLayerInterfaceIndex == targetIndex)
 			{
