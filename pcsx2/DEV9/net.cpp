@@ -281,7 +281,7 @@ void NetAdapter::SetMACAddress(MAC_Address* mac)
 	dev9.eeprom[3] = (dev9.eeprom[0] + dev9.eeprom[1] + dev9.eeprom[2]) & 0xffff;
 }
 
-bool NetAdapter::VerifyPkt(NetPacket* pkt, int read_size)
+bool NetAdapter::VerifyPkt(NetPacket* pkt, unsigned read_size)
 {
 	if ((*(MAC_Address*)&pkt->buffer[0] != ps2MAC) && (*(MAC_Address*)&pkt->buffer[0] != broadcastMAC))
 	{

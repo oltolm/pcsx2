@@ -89,7 +89,9 @@
 #include <tchar.h>
 #include <windows.h>
 #include <dbghelp.h>
+#ifdef _MSC_VER
 #pragma comment(lib, "version.lib") // for "VerQueryValue"
+#endif
 
 
 static void MyStrCpy(char* szDest, size_t nMaxDestSize, const char* szSrc)
