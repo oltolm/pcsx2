@@ -37,13 +37,13 @@ const PacketReader::MAC_Address defaultMAC = {{{0x00, 0x04, 0x1F, 0x82, 0x30, 0x
 struct NetPacket
 {
 	NetPacket() { size = 0; }
-	NetPacket(void* ptr, int sz)
+	NetPacket(void* ptr, unsigned sz)
 	{
 		size = sz;
 		memcpy(buffer, ptr, sz);
 	}
 
-	int size;
+	unsigned size;
 	char buffer[2048 - sizeof(int)]; //1536 is realy needed, just pad up to 2048 bytes :)
 };
 /*
@@ -118,7 +118,7 @@ public:
 
 protected:
 	void SetMACAddress(PacketReader::MAC_Address* mac);
-	bool VerifyPkt(NetPacket* pkt, int read_size);
+	bool VerifyPkt(NetPacket* pkt, unsigned read_size);
 
 	void InspectRecv(NetPacket* pkt);
 	void InspectSend(NetPacket* pkt);
