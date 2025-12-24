@@ -200,6 +200,7 @@ void CTC2() {
 			break;
 		case REG_CLIP_FLAG:
 			VU0.clipflag = cpuRegs.GPR.r[_Rt_].UL[0];
+			[[fallthrough]];
 		default:
 			VU0.VI[_Fs_].UL = cpuRegs.GPR.r[_Rt_].UL[0];
 			break;

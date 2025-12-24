@@ -67,7 +67,7 @@ bool DInputSource::Initialize(SettingsInterface& si, std::unique_lock<std::mutex
 		return false;
 	}
 
-	PFNDIRECTINPUT8CREATE create = reinterpret_cast<PFNDIRECTINPUT8CREATE>(GetProcAddress(m_dinput_module.get(), "DirectInput8Create"));
+	PFNDIRECTINPUT8CREATE create = reinterpret_cast<PFNDIRECTINPUT8CREATE>(reinterpret_cast<void*>(GetProcAddress(m_dinput_module.get(), "DirectInput8Create")));
 	if (!create)
 	{
 		Console.Error("Failed to get DInput function pointers.");
