@@ -578,11 +578,11 @@ bool TAPAdapter::send(NetPacket* pkt)
 	if (NetAdapter::send(pkt))
 		return true;
 
-	DWORD writen;
+	DWORD written;
 	BOOL result = WriteFile(htap,
 		pkt->buffer,
 		pkt->size,
-		&writen,
+		&written,
 		&write);
 
 	if (!result)
@@ -591,13 +591,13 @@ bool TAPAdapter::send(NetPacket* pkt)
 		if (dwError == ERROR_IO_PENDING)
 		{
 			WaitForSingleObject(write.hEvent, INFINITE);
-			result = GetOverlappedResult(htap, &write, &writen, FALSE);
+			result = GetOverlappedResult(htap, &write, &written, FALSE);
 		}
 	}
 
 	if (result)
 	{
-		if (writen != pkt->size)
+		if (written != pkt->size)
 			return false;
 
 		return true;
