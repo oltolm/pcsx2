@@ -4,6 +4,7 @@
 #pragma once
 #include "SaveState.h"
 #include "USB/qemu-usb/desc.h"
+#include <chrono>
 #include <list>
 #include <string>
 
