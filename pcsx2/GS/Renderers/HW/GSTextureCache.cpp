@@ -7496,8 +7496,6 @@ void GSTextureCache::Read(Source* t, const GSVector4i& r)
 
 GSTextureCache::Surface::Surface() = default;
 
-GSTextureCache::Surface::~Surface() = default;
-
 bool GSTextureCache::Surface::Inside(u32 bp, u32 bw, u32 psm, const GSVector4i& rect) const
 {
 	// Valid only for color formats.
