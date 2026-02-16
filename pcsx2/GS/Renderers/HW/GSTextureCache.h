@@ -141,7 +141,7 @@ public:
 	{
 	protected:
 		Surface();
-		~Surface();
+		~Surface() = default;
 
 		bool OverlapsHelper(u32 start_block0, u32 end_block0, u32 bp, u32 bw, u32 psm, const GSVector4i& rect) const;
 	public:
