@@ -34,6 +34,10 @@
 static u32 s_debug_scope_depth = 0;
 #endif
 
+#ifdef __MINGW32__
+#define D3D12_MESSAGE_ID_GPU_BASED_VALIDATION_INCOMPATIBLE_TEXTURE_LAYOUT D3D12_MESSAGE_ID(1358)
+#endif
+
 static bool IsDATEModePrimIDInit(u32 flag)
 {
 	return flag == 1 || flag == 2;
