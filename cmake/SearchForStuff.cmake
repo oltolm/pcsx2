@@ -36,7 +36,14 @@ FetchContent_Declare(
 	OVERRIDE_FIND_PACKAGE
 )
 
-FetchContent_MakeAvailable(plutovg plutosvg)
+FetchContent_Declare(
+	ryml
+	GIT_REPOSITORY https://github.com/biojppm/rapidyaml.git
+	GIT_TAG v0.11.1
+	OVERRIDE_FIND_PACKAGE
+)
+
+FetchContent_MakeAvailable(plutovg plutosvg ryml)
 
 find_package(plutovg 1.1.0 REQUIRED)
 find_package(plutosvg 0.0.7 REQUIRED)
