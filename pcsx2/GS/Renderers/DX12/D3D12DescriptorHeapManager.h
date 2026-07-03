@@ -10,7 +10,11 @@
 
 #include <bitset>
 #include <cstring>
+#ifdef _MSC_VER
 #include <directx/d3d12.h>
+#else
+#include <d3d12.h>
+#endif
 #include <unordered_map>
 #include <vector>
 
