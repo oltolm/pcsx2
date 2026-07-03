@@ -20,7 +20,11 @@
 
 #include <array>
 #include <d3d11.h>
+#ifdef _MSC_VER
 #include <directx/d3d12.h>
+#else
+#include <d3d12.h>
+#endif
 #include <d3dcompiler.h>
 #include <fstream>
 

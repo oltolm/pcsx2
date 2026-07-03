@@ -10,7 +10,11 @@
 #include "common/RedtapeWilCom.h"
 
 #include <cstdio>
+#ifdef _MSC_VER
 #include <directx/d3d12.h>
+#else
+#include <d3d12.h>
+#endif
 #include <string_view>
 #include <unordered_map>
 #include <vector>
