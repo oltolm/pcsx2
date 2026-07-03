@@ -8,7 +8,11 @@
 #include "common/RedtapeWilCom.h"
 
 #include <array>
+#ifdef _MSC_VER
 #include <directx/d3d12.h>
+#else
+#include <d3d12.h>
+#endif
 #include <string_view>
 
 class D3D12ShaderCache;
