@@ -8,5 +8,7 @@ if (NOT MINGW)
 endif()
 
 target_include_directories(D3D12MemAlloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_compile_definitions(D3D12MemAlloc PRIVATE "D3D12MA_USING_DIRECTX_HEADERS")
+if (MSVC)
+	target_compile_definitions(D3D12MemAlloc PRIVATE "D3D12MA_USING_DIRECTX_HEADERS")
+endif()
 disable_compiler_warnings_for_target(D3D12MemAlloc)
