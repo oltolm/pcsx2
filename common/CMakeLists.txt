@@ -148,8 +148,15 @@ if(WIN32)
 		)
 	
 	if (ARCH_X86)
-		enable_language(ASM_MASM)
-		target_sources(common PRIVATE FastJmp.asm)
+		if(MSVC)
+			enable_language(ASM_MASM)
+		else()
+			add_custom_command(COMMAND jwasm -win64 ${CMAKE_CURRENT_SOURCE_DIR}/FastJmp.asm
+				OUTPUT FastJmp.obj
+				DEPENDS FastJmp.asm
+			)
+			target_sources(common PRIVATE FastJmp.asm)
+		endif()
 	elseif (ARCH_ARM64)
 		enable_language(ASM_MARMASM)
 		target_sources(common PRIVATE FastJmp_arm64.asm)
