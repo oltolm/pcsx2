@@ -11,6 +11,7 @@
 #include "Memory.h"
 #include "IopMem.h"
 #include "common/Console.h"
+#include "PCSX2Memory.h"
 
 std::vector<BreakPoint> CBreakPoints::breakPoints_;
 u32 CBreakPoints::breakSkipFirstAtEE_ = 0;
