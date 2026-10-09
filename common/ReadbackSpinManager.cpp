@@ -4,6 +4,7 @@
 #include "ReadbackSpinManager.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 static bool EventIsReadback(const ReadbackSpinManager::Event& event)
 {

@@ -9,6 +9,7 @@
 
 #include "fmt/format.h"
 
+#include <cstdlib>
 #include <mutex>
 #include <vector>
 
