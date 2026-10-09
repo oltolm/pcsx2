@@ -10,6 +10,7 @@
 #endif
 
 #include <csetjmp>
+#include <exception>
 
 struct RapidYAMLContext
 {
